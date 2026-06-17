@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "SewaLink Mobile",
+    "slug": "sewalink-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "assetBundlePatterns": ["**/*"]
+  }
+}

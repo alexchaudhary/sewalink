@@ -1,0 +1,107 @@
+erDiagram
+    USER ||--o{ PROVIDER_PROFILE : owns
+    USER ||--o{ BOOKING : places
+    USER ||--o{ REVIEW : writes
+    PROVIDER_PROFILE ||--o{ BOOKING : receives
+    PROVIDER_PROFILE ||--o{ REVIEW : receives
+    PROVIDER_PROFILE ||--o{ PORTFOLIO_IMAGE : has
+    PROVIDER_PROFILE ||--o{ PROVIDER_AVAILABILITY : schedules
+    PROVIDER_PROFILE ||--o{ PROVIDER_SKILL : lists
+    SERVICE_CATEGORY ||--o{ PROVIDER_PROFILE : categorizes
+    SERVICE_AREA ||--o{ PROVIDER_PROFILE : covers
+    BOOKING ||--o{ PAYMENT : settles
+    CHAT_THREAD ||--o{ CHAT_MESSAGE : contains
+    USER ||--o{ CHAT_THREAD : participates
+
+    USER {
+        UUID id PK
+        String firstName
+        String lastName
+        String email
+        String phone
+        String role
+        Boolean emailVerified
+        Boolean phoneVerified
+        DateTime createdAt
+    }
+    PROVIDER_PROFILE {
+        UUID id PK
+        UUID userId FK
+        String displayName
+        String headline
+        Text bio
+        String address
+        String city
+        String district
+        String country
+        Float rating
+        Boolean isVerified
+        DateTime createdAt
+    }
+    SERVICE_CATEGORY {
+        UUID id PK
+        String name
+        String slug
+        String description
+        DateTime createdAt
+    }
+    SERVICE_AREA {
+        UUID id PK
+        UUID providerId FK
+        String district
+        String city
+        Float radiusKm
+    }
+    PROVIDER_SKILL {
+        UUID id PK
+        UUID providerId FK
+        String name
+        Int experienceYears
+        Float hourlyRate
+    }
+    PORTFOLIO_IMAGE {
+        UUID id PK
+        UUID providerId FK
+        String url
+        String label
+    }
+    BOOKING {
+        UUID id PK
+        UUID customerId FK
+        UUID providerId FK
+        DateTime scheduledAt
+        String type
+        String status
+        Float totalPrice
+        String location
+    }
+    PAYMENT {
+        UUID id PK
+        UUID bookingId FK
+        String gateway
+        String status
+        Float amount
+        String transactionId
+    }
+    REVIEW {
+        UUID id PK
+        UUID bookingId FK
+        UUID authorId FK
+        UUID providerId FK
+        Int rating
+        Text comment
+    }
+    CHAT_THREAD {
+        UUID id PK
+        UUID customerId FK
+        UUID providerId FK
+        DateTime updatedAt
+    }
+    CHAT_MESSAGE {
+        UUID id PK
+        UUID threadId FK
+        UUID senderId FK
+        String content
+        String messageType
+        DateTime createdAt
+    }

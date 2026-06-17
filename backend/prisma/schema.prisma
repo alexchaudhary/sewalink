@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum BookingType {
+  INSTANT
+  SCHEDULED
+  EMERGENCY
+}
+
+enum PaymentMethod {
+  STRIPE
+  ESEWA
+  KHALTI
+  FONEPAY
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  PENDING
+  REJECTED
+}
+
+enum ProviderVerificationStatus {
+  DRAFT
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id              String              @id @default(uuid())
+  firstName       String
+  lastName        String
+  email           String              @unique
+  phone           String              @unique
+  password        String
+  role            UserRole            @default(CUSTOMER)
+  emailVerified   Boolean             @default(false)
+  phoneVerified   Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  providerProfile ProviderProfile?
+  bookings        Booking[]           @relation("CustomerBookings")
+  reviews         Review[]            @relation("AuthorReviews")
+  chatThreads     ChatThread[]        @relation("UserThreads")
+  sentMessages    ChatMessage[]       @relation("SentMessages")
+  notifications   Notification[]
+}
+
+model ProviderProfile {
+  id                     String                      @id @default(uuid())
+  user                   User                        @relation(fields: [userId], references: [id])
+  userId                 String                      @unique
+  displayName            String
+  headline               String
+  bio                    String?
+  address                String?
+  city                   String?
+  district               String?
+  country                String?
+  hourlyRate             Float
+  rating                 Float                       @default(0)
+  reviewsCount           Int                         @default(0)
+  isVerified             Boolean                     @default(false)
+  verificationStatus     ProviderVerificationStatus  @default(DRAFT)
+  verificationDocument   String?
+  portfolioImages        PortfolioImage[]
+  skills                 ProviderSkill[]
+  serviceAreas           ServiceArea[]
+  categories             ProviderCategory[]
+  availabilities         ProviderAvailability[]
+  bookings               Booking[]                   @relation("ProviderBookings")
+  reviews                Review[]                    @relation("ProviderReviews")
+  earnings               Earning[]
+  chatThreads            ChatThread[]                @relation("ProviderThreads")
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+}
+
+model ServiceCategory {
+  id          String             @id @default(uuid())
+  name        String             @unique
+  slug        String             @unique
+  description String?
+  providers   ProviderCategory[]
+  createdAt   DateTime           @default(now())
+}
+
+model ProviderCategory {
+  id               String           @id @default(uuid())
+  provider         ProviderProfile  @relation(fields: [providerId], references: [id])
+  providerId       String
+  category         ServiceCategory  @relation(fields: [categoryId], references: [id])
+  categoryId       String
+}
+
+model ProviderSkill {
+  id              String           @id @default(uuid())
+  provider        ProviderProfile  @relation(fields: [providerId], references: [id])
+  providerId      String
+  name            String
+  experienceYears Int
+  hourlyRate      Float
+}
+
+model ServiceArea {
+  id         String           @id @default(uuid())
+  provider   ProviderProfile  @relation(fields: [providerId], references: [id])
+  providerId String
+  district   String
+  city       String
+  radiusKm   Float            @default(10)
+}
+
+model ProviderAvailability {
+  id         String           @id @default(uuid())
+  provider   ProviderProfile  @relation(fields: [providerId], references: [id])
+  providerId String
+  dayOfWeek  Int              @default(0)
+  startTime  String           @default("09:00")
+  endTime    String           @default("17:00")
+  isAvailable Boolean         @default(true)
+}
+
+model PortfolioImage {
+  id         String           @id @default(uuid())
+  provider   ProviderProfile  @relation(fields: [providerId], references: [id])
+  providerId String
+  url        String
+  label      String?
+}
+
+model Booking {
+  id            String           @id @default(uuid())
+  customer      User             @relation("CustomerBookings", fields: [customerId], references: [id])
+  customerId    String
+  provider      ProviderProfile  @relation("ProviderBookings", fields: [providerId], references: [id])
+  providerId    String
+  type          BookingType
+  status        BookingStatus    @default(PENDING)
+  scheduledAt   DateTime
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  totalPrice    Float
+  notes         String?
+  location      String
+  payment       Payment?
+  review        Review?
+}
+
+model Payment {
+  id             String         @id @default(uuid())
+  booking        Booking        @relation(fields: [bookingId], references: [id])
+  bookingId      String         @unique
+  gateway        PaymentMethod
+  status         PaymentStatus  @default(PENDING)
+  amount         Float
+  transactionId  String?
+  receiptUrl     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Review {
+  id          String      @id @default(uuid())
+  booking     Booking     @relation(fields: [bookingId], references: [id])
+  bookingId   String      @unique
+  author      User        @relation("AuthorReviews", fields: [authorId], references: [id])
+  authorId    String
+  provider    ProviderProfile @relation("ProviderReviews", fields: [providerId], references: [id])
+  providerId  String
+  rating      Int
+  comment     String
+  status      ReviewStatus @default(PUBLISHED)
+  createdAt   DateTime     @default(now())
+}
+
+model ChatThread {
+  id          String        @id @default(uuid())
+  customer    User          @relation("UserThreads", fields: [customerId], references: [id])
+  customerId  String
+  provider    ProviderProfile @relation("ProviderThreads", fields: [providerId], references: [id])
+  providerId  String
+  messages    ChatMessage[]
+  updatedAt   DateTime      @updatedAt
+}
+
+model ChatMessage {
+  id          String      @id @default(uuid())
+  thread      ChatThread  @relation(fields: [threadId], references: [id])
+  threadId    String
+  sender      User        @relation("SentMessages", fields: [senderId], references: [id])
+  senderId    String
+  content     String
+  messageType String      @default("TEXT")
+  createdAt   DateTime    @default(now())
+}
+
+model Notification {
+  id          String      @id @default(uuid())
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+  title       String
+  message     String
+  type        String
+  read        Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+}
+
+model Earning {
+  id          String           @id @default(uuid())
+  provider    ProviderProfile  @relation(fields: [providerId], references: [id])
+  providerId  String
+  amount      Float
+  source      String
+  recordedAt  DateTime         @default(now())
+}
