@@ -108,13 +108,13 @@ export default function AdminDashboard() {
       </header>
 
       <section className="admin-shell" style={{ maxWidth: 1180, margin: "0 auto", padding: "44px 28px 60px" }}>
-        <div style={{
+        <div className="admin-hero" style={{
           display: "grid",
           gridTemplateColumns: "minmax(0,1fr) auto",
           gap: 24,
           alignItems: "end",
           marginBottom: 26,
-        }} className="admin-hero">
+        }}>
           <div>
             <div style={{
               display: "inline-flex",
