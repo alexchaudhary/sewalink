@@ -71,7 +71,7 @@ function BrandLogo() {
         <Wrench size={20} strokeWidth={2.5} />
       </div>
       <div>
-        <div style={{ fontSize: 19, fontWeight: 900, lineHeight: 1, color: "#fff" }}>swealink.in</div>
+        <div style={{ fontSize: 19, fontWeight: 900, lineHeight: 1, color: "#fff" }}>sewalink</div>
         <div style={{ marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.38)" }}>Local services platform</div>
       </div>
     </div>
@@ -230,7 +230,7 @@ export default function LoginPage() {
               fontWeight: 900,
               lineHeight: 1.05,
             }}>
-              Sign in to your swealink.in workspace.
+              Sign in to your sewalink workspace.
             </h1>
             <p style={{
               maxWidth: 460,
@@ -309,7 +309,7 @@ export default function LoginPage() {
                   <div>
                     <h2 style={{ margin: 0, fontSize: 30, fontWeight: 900 }}>Welcome back</h2>
                     <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 14 }}>
-                      Sign in to continue testing your swealink.in account.
+                      Sign in to continue testing your sewalink account.
                     </p>
                   </div>
                 </div>
