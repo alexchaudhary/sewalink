@@ -19,11 +19,13 @@ const app = express();
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    // Senior Tip: Loosen content security policies during local development mesh phases
+    contentSecurityPolicy: false,
   })
 );
 app.use(compression());
 
-// 2. Dynamic CORS Configuration Pipeline
+// 2. Comprehensive Robust CORS Configuration
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
@@ -33,15 +35,20 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow seamless execution for Postman, cURL, or server-to-server requests outside production nodes
-      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+      // Direct pass during development to prevent local browser port blockages
+      if (process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error("CORS Policy Breach: Access Denied"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    // Senior Tip: Handle browser pre-flight OPTIONS caching options securely
+    optionsSuccessStatus: 200,
   })
 );
 
@@ -83,7 +90,7 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-// 8. CRITICAL SENIOR FIX: Bind your centralized global errorHandler directly into the native Express stream
+// 8. Bind your centralized global errorHandler directly into the native Express stream
 app.use(errorHandler);
 
 export default app;
