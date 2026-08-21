@@ -2,143 +2,166 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { sendSuccess, sendError } from "../utils/apiResponse";
 
-const USER_SAFE_SELECT = {
-  select: {
-    id: true,
-    firstName: true,
-    lastName: true,
-    email: true,
-    phone: true,
-    avatarUrl: true,
-  },
+/**
+ * Custom type definition mirroring your authenticated user token payload structure.
+ */
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
+/**
+ * Senior Production-Grade Booking Creation Controller
+ * Enables authenticated consumers to dispatch structural service requests to target providers.
+ */
+export const createBooking = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const customerId = req.user?.id;
+    const { providerProfileId, title, description, scheduledDate, budget } = req.body;
+
+    // 1. Defensively guard core application criteria requirements
+    if (!customerId) {
+      return sendError(res, "Authentication required. Missing user identity context.", 401);
+    }
+    if (!providerProfileId || !title || !description || !scheduledDate || !budget) {
+      return sendError(res, "Missing parameters. Full booking constraints breached.", 400);
+    }
+
+    // 2. Verify that the target service provider profile actually exists in the database
+    const providerExists = await prisma.providerProfile.findUnique({
+      where: { id: providerProfileId },
+    });
+    if (!providerExists) {
+      return sendError(res, "Target service professional profile record not found.", 404);
+    }
+
+    // 3. Create a fresh booking record inside the database with a default 'PENDING' status state
+    const newBooking = await prisma.booking.create({
+      data: {
+        customerId,
+        providerProfileId,
+        title: title.trim(),
+        description: description.trim(),
+        scheduledDate: new Date(scheduledDate),
+        budget: Number(budget),
+        status: "PENDING",
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Service request booking dispatched successfully.",
+      data: { booking: newBooking },
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
 
-export const createBooking = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Senior Production-Grade Booking Status Update Controller
+ * Allows providers to update booking states (e.g., CONFIRMED, COMPLETED, REJECTED).
+ */
+export const updateBookingStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id;
-    if (!userId) {
-      return sendError(res, "Authentication required to create a booking.", 401);
-    }
-
-    const { providerId, scheduledAt, type, totalPrice, location, notes, paymentMethod } = req.body;
-
-    const provider = await prisma.providerProfile.findUnique({
-      where: { id: providerId },
-    });
-
-    if (!provider) {
-      return sendError(res, "Target service provider not found.", 404);
-    }
-
-    if (provider.userId === userId) {
-      return sendError(res, "You cannot create a service booking for yourself.", 400);
-    }
-
-    const booking = await prisma.booking.create({
-      data: {
-        customerId: userId,
-        providerId,
-        type: type || "SCHEDULED",
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
-        totalPrice: Number(totalPrice),
-        location,
-        notes,
-        payment: paymentMethod
-          ? {
-              create: {
-                gateway: paymentMethod,
-                status: "PENDING",
-                amount: Number(totalPrice),
-              },
-            }
-          : undefined,
-      },
-      include: {
-        provider: true,
-        payment: true,
-      },
-    });
-
-    return sendSuccess(res, "Booking created successfully.", { booking }, 201);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getBookings = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
-    if (!user) {
-      return sendError(res, "Unauthorized.", 401);
-    }
-
-    if (user.role === "CUSTOMER") {
-      const bookings = await prisma.booking.findMany({
-        where: { customerId: user.id },
-        include: { provider: true, payment: true },
-        orderBy: { createdAt: "desc" },
-      });
-      return sendSuccess(res, "Customer bookings retrieved.", { bookings });
-    }
-
-    if (user.role === "PROVIDER") {
-      const provider = await prisma.providerProfile.findUnique({ where: { userId: user.id } });
-      if (!provider) {
-        return sendError(res, "Provider profile not found.", 404);
-      }
-
-      const bookings = await prisma.booking.findMany({
-        where: { providerId: provider.id },
-        include: { customer: USER_SAFE_SELECT, payment: true },
-        orderBy: { createdAt: "desc" },
-      });
-      return sendSuccess(res, "Provider bookings retrieved.", { bookings });
-    }
-
-    const bookings = await prisma.booking.findMany({
-      include: { customer: USER_SAFE_SELECT, provider: true, payment: true },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
-
-    return sendSuccess(res, "All system bookings fetched.", { bookings });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const updateBookingStatus = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = req.user;
+    const userRole = req.user?.role;
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!user) {
-      return sendError(res, "Unauthorized.", 401);
+    if (!userId || !userRole) {
+      return sendError(res, "Authentication required. Profile context missing.", 401);
+    }
+    if (!status) {
+      return sendError(res, "Missing status parameter criteria block.", 400);
     }
 
-    const booking = await prisma.booking.findUnique({ where: { id } });
-    if (!booking) {
-      return sendError(res, "Booking record not found.", 404);
+    const normalizedStatus = status.toUpperCase();
+    if (!["PENDING", "CONFIRMED", "COMPLETED", "REJECTED", "CANCELLED"].includes(normalizedStatus)) {
+      return sendError(res, "Invalid state assignment. Booking status boundary not recognized.", 400);
     }
 
-    if (user.role === "PROVIDER") {
-      const provider = await prisma.providerProfile.findUnique({ where: { userId: user.id } });
-      if (!provider || provider.id !== booking.providerId) {
-        return sendError(res, "Forbidden: You are not authorized to update this booking.", 403);
-      }
-    } else if (user.role === "CUSTOMER" && booking.customerId !== user.id) {
-      return sendError(res, "Forbidden: You do not own this booking.", 403);
-    }
-
-    const updated = await prisma.booking.update({
+    // 1. Locate the existing booking entity along with its dependent structures
+    const existingBooking = await prisma.booking.findUnique({
       where: { id },
-      data: { status },
-      include: { payment: true },
+      include: { providerProfile: true },
     });
 
-    return sendSuccess(res, `Booking status updated to ${status}.`, { booking: updated });
+    if (!existingBooking) {
+      return sendError(res, "Target service booking log not found.", 404);
+    }
+
+    // 2. Strict Role Gating: Enforce business logic rules on who can alter specific statuses
+    if (userRole === "PROVIDER") {
+      if (existingBooking.providerProfile.userId !== userId) {
+        return sendError(res, "Forbidden access. You do not own this service profile thread.", 403);
+      }
+    } else if (userRole === "CUSTOMER") {
+      if (existingBooking.customerId !== userId) {
+        return sendError(res, "Forbidden access. You do not own this customer profile thread.", 403);
+      }
+      if (!["CANCELLED"].includes(normalizedStatus)) {
+        return sendError(res, "Forbidden action. Customers can only trigger CANCELLED status parameters.", 403);
+      }
+    }
+
+    // 3. Execute the atomic update command
+    const updatedBooking = await prisma.booking.update({
+      where: { id },
+      data: { status: normalizedStatus },
+    });
+
+    return sendSuccess(res, "Booking track lifecycle status updated successfully.", { booking: updatedBooking });
   } catch (error) {
-    next(error);
+    return next(error);
+  }
+};
+
+/**
+ * Retrieve All Bookings Associated with the Authenticated User (Context-Aware)
+ */
+export const getUserBookings = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!userId || !userRole) {
+      return sendError(res, "Authentication required. Missing session tokens.", 401);
+    }
+
+    let queryConditions = {};
+
+    // Context splitting based on multi-tenant roles
+    if (userRole === "PROVIDER") {
+      const providerProfile = await prisma.providerProfile.findUnique({ where: { userId } });
+      if (!providerProfile) {
+        return sendSuccess(res, "No active provider profile established yet.", { bookings: [] });
+      }
+      queryConditions = { providerProfileId: providerProfile.id };
+    } else {
+      queryConditions = { customerId: userId };
+    }
+
+    const bookingsList = await prisma.booking.findMany({
+      where: queryConditions,
+      include: {
+        customer: {
+          select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+        },
+        providerProfile: {
+          include: {
+            user: { select: { id: true, firstName: true, lastName: true, phone: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return sendSuccess(res, "User relational booking registers retrieved successfully.", { bookings: bookingsList });
+  } catch (error) {
+    return next(error);
   }
 };
