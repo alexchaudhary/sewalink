@@ -16,32 +16,37 @@ dotenv.config();
 const app = express();
 
 // Security & Optimization Middlewares
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(compression());
 
-// Production CORS Configuration
+// CORS Configuration
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
   "http://localhost:5173",
-].filter(Boolean) as string[];
+].filter((url): url is string => Boolean(url));
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS Policy: Access Denied"));
+      // Postman, cURL, ra Server-to-Server request ma origin undefined hunchha
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
       }
+      return callback(new Error("CORS Policy: Access Denied"));
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Root Route
 app.get("/", (_req: Request, res: Response) => {
@@ -73,10 +78,26 @@ app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     message: `Cannot ${req.method} ${req.originalUrl} - Route not found`,
+    errors: null,
   });
 });
 
-// Global Error Middleware
-app.use(errorHandler);
+// Global Error Middleware (Must have 4 arguments for Express to recognize it)
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  if (typeof errorHandler === "function") {
+    return errorHandler(err, req, res, next);
+  }
+
+  const statusCode = err.statusCode || err.status || 500;
+  return res.status(statusCode).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    errors: err.errors || null,
+  });
+});
 
 export default app;
