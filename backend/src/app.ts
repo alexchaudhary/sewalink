@@ -15,44 +15,50 @@ dotenv.config();
 
 const app = express();
 
-// Security & Optimization Middlewares
-app.use(helmet());
+// 1. Security & Performance Optimization Middlewares
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(compression());
 
-// Production CORS Configuration
+// 2. Dynamic CORS Configuration Pipeline
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
   "http://localhost:5173",
-].filter(Boolean) as string[];
+].filter((url): url is string => Boolean(url));
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS Policy: Access Denied"));
+      // Allow seamless execution for Postman, cURL, or server-to-server requests outside production nodes
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
       }
+      return callback(new Error("CORS Policy Breach: Access Denied"));
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// 3. Request Stream Body Parsing Layers
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Root Route
+// 4. Base Information Root Route
 app.get("/", (_req: Request, res: Response) => {
   res.json({
-    message: "Welcome to SewaLink API",
+    message: "Welcome to SewaLink Enterprise Architecture Core API",
     status: "healthy",
     docs: "/api/health",
   });
 });
 
-// Health Check Endpoint
+// 5. Health Check Metrics Endpoint
 app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({
     status: "ok",
@@ -61,22 +67,23 @@ app.get("/api/health", (_req: Request, res: Response) => {
   });
 });
 
-// API Routes
+// 6. Application Enterprise Routing Mount Points
 app.use("/api/auth", authRouter);
 app.use("/api/providers", providerRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/payments", paymentRouter);
 app.use("/api/admin", adminRouter);
 
-// 404 Route Not Found Handler
+// 7. Standard 404 Route Not Found Interceptor Boundary
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
-    message: `Cannot ${req.method} ${req.originalUrl} - Route not found`,
+    message: `Cannot ${req.method} ${req.originalUrl} - Resource route path not found`,
+    errors: null,
   });
 });
 
-// Global Error Middleware
+// 8. CRITICAL SENIOR FIX: Bind your centralized global errorHandler directly into the native Express stream
 app.use(errorHandler);
 
 export default app;

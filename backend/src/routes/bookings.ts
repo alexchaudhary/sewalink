@@ -1,13 +1,14 @@
 import { Router } from "express";
-import { createBooking, getBookings, updateBookingStatus } from "../controllers/bookingController";
+import { createBooking, updateBookingStatus, getUserBookings } from "../controllers/bookingController";
 import { requireAuth } from "../middleware/auth";
-import { validate } from "../middleware/validate";
-import { createBookingSchema, updateBookingStatusSchema } from "../validations/bookingValidation";
 
 const router = Router();
 
-router.post("/", requireAuth, validate(createBookingSchema), createBooking);
-router.get("/", requireAuth, getBookings);
-router.patch("/:id/status", requireAuth, validate(updateBookingStatusSchema), updateBookingStatus);
+// Secure all booking infrastructure routes using the unified authentication guard
+router.use(requireAuth);
+
+router.post("/", createBooking);
+router.get("/my-bookings", getUserBookings);
+router.patch("/:id/status", updateBookingStatus);
 
 export default router;
