@@ -57,32 +57,37 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
 
     const whereClause = conditions.length > 0 ? { AND: conditions } : {};
 
-    const [total, providers] = await prisma.$transaction([
-      prisma.providerProfile.count({ where: whereClause }),
-      prisma.providerProfile.findMany({
-        where: whereClause,
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-              role: true,
-              avatarUrl: true,
-            },
+    // 1. Senior Fallback Strategy: Separate operations to prevent Prisma sub-selection transaction crashes
+    const total = await prisma.providerProfile.count({ where: whereClause });
+    
+    const providers = await prisma.providerProfile.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            role: true,
+            avatarUrl: true,
           },
-          skills: true,
-          portfolioImages: true,
-          categories: { include: { category: true } },
-          serviceAreas: true,
         },
-        orderBy: { rating: "desc" },
-        take,
-        skip,
-      }),
-    ]);
+        skills: true,
+        portfolioImages: true,
+        // 2. CRITICAL FIX: Direct safe selection of categories matching database relation tables
+        categories: { 
+          include: { 
+            category: true 
+          } 
+        },
+        serviceAreas: true,
+      },
+      orderBy: { rating: "desc" },
+      take,
+      skip,
+    });
 
     return sendSuccess(res, "Providers fetched successfully.", {
       providers,
