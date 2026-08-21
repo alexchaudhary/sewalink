@@ -1,464 +1,519 @@
-import type { FormEvent } from "react";
+"use client";
+
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import {
-  User,
-  Mail,
-  Phone,
-  Lock,
+  ArrowRight,
+  CheckCircle2,
+  Clock,
   Eye,
   EyeOff,
-  ArrowRight,
-  Loader2,
-  CheckCircle2,
+  Hammer,
+  Lock,
+  Mail,
+  MapPin,
+  Paintbrush,
+  Phone,
+  ShieldCheck,
+  Sparkles,
+  User,
+  Wrench,
+  Zap,
 } from "lucide-react";
-import { fetcher } from "../lib/api";
 
-// ── Left panel service chips ──────────────────────────────────────────────────
-const CHIPS = [
-  { icon: "🔧", label: "Plumber" },
-  { icon: "⚡", label: "Electrician" },
-  { icon: "🔨", label: "Carpenter" },
-  { icon: "🖌️", label: "Painter" },
-  { icon: "🧹", label: "Cleaner" },
-  { icon: "💻", label: "IT Support" },
+const SERVICES = [
+  { Icon: Wrench, label: "Plumbing" },
+  { Icon: Zap, label: "Electrical" },
+  { Icon: Hammer, label: "Repair work" },
+  { Icon: Paintbrush, label: "Painting" },
+  { Icon: Sparkles, label: "Cleaning" },
 ];
 
-// ── Avatar gradients for social proof ────────────────────────────────────────
-const AVATAR_GRADIENTS = [
-  "from-amber-400 to-orange-500",
-  "from-violet-400 to-purple-500",
-  "from-emerald-400 to-teal-500",
-  "from-sky-400 to-blue-500",
-  "from-rose-400 to-pink-500",
+const BUILD_STEPS = [
+  { Icon: User, title: "Create test accounts", text: "Use registration to validate the onboarding flow." },
+  { Icon: ShieldCheck, title: "Prepare verification", text: "Provider and user checks can be added after the core flow is stable." },
+  { Icon: MapPin, title: "Launch by location", text: "Start with a focused service area before opening public signups." },
+  { Icon: Clock, title: "Add bookings later", text: "Keep the current phase simple, then connect scheduling and payments." },
 ];
-const AVATAR_INITIALS = ["R", "S", "A", "P", "M"];
 
-// ── Reusable field wrapper ────────────────────────────────────────────────────
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+interface Form {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
+interface Errs {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+}
+
+function validate(form: Form): Errs {
+  const errors: Errs = {};
+  if (!form.firstName.trim()) errors.firstName = "Required";
+  if (!form.lastName.trim()) errors.lastName = "Required";
+  if (!form.email.trim()) errors.email = "Required";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = "Invalid email";
+  if (!form.phone.trim()) errors.phone = "Required";
+  else if (!/^[+\d\s\-()]{7,}$/.test(form.phone)) errors.phone = "Invalid number";
+  if (!form.password) errors.password = "Required";
+  else if (form.password.length < 8) errors.password = "Min 8 characters";
+  return errors;
+}
+
+function BrandLogo() {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[10.5px] font-semibold uppercase tracking-[0.4px] text-white/35">
-        {label}
-      </label>
-      {children}
+    <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+      <div style={{
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        background: "linear-gradient(135deg,#f59e0b,#ea580c)",
+        color: "#111827",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 10px 30px rgba(245,158,11,0.28)",
+      }}>
+        <Wrench size={20} strokeWidth={2.5} />
+      </div>
+      <div>
+        <div style={{ fontSize: 19, fontWeight: 900, lineHeight: 1, color: "#fff" }}>swealink.in</div>
+        <div style={{ marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.38)" }}>Local services platform</div>
+      </div>
     </div>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-export default function RegisterPage() {
-  const router = useRouter();
+function Field({
+  id,
+  label,
+  type = "text",
+  placeholder,
+  value,
+  onChange,
+  error,
+  IconEl,
+  right,
+}: {
+  id: string;
+  label: string;
+  type?: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  IconEl: React.ElementType;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label htmlFor={id} style={{
+        color: "rgba(255,255,255,0.48)",
+        fontSize: 11,
+        fontWeight: 700,
+        textTransform: "uppercase",
+      }}>
+        {label}
+      </label>
+      <div style={{ position: "relative" }}>
+        <IconEl size={15} style={{
+          position: "absolute",
+          left: 14,
+          top: "50%",
+          transform: "translateY(-50%)",
+          color: error ? "#f87171" : "rgba(255,255,255,0.34)",
+          pointerEvents: "none",
+        }} />
+        <input
+          id={id}
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          style={{
+            width: "100%",
+            border: `1px solid ${error ? "rgba(248,113,113,0.65)" : "rgba(255,255,255,0.12)"}`,
+            borderRadius: 10,
+            background: error ? "rgba(248,113,113,0.07)" : "rgba(255,255,255,0.045)",
+            color: "#fff",
+            fontFamily: "inherit",
+            fontSize: 14,
+            outline: "none",
+            padding: right ? "13px 44px 13px 42px" : "13px 14px 13px 42px",
+          }}
+        />
+        {right && (
+          <div style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)" }}>
+            {right}
+          </div>
+        )}
+      </div>
+      {error && <span style={{ color: "#f87171", fontSize: 12 }}>{error}</span>}
+    </div>
+  );
+}
 
-  const [form, setForm] = useState({
+function PasswordStrength({ password }: { password: string }) {
+  if (!password) return null;
+
+  const score =
+    (password.length >= 8 ? 1 : 0) +
+    (/[A-Z]/.test(password) ? 1 : 0) +
+    (/\d/.test(password) ? 1 : 0) +
+    (/[^A-Za-z0-9]/.test(password) ? 1 : 0);
+
+  const label = ["", "Weak", "Fair", "Good", "Strong"][score];
+  const color = ["", "#f87171", "#fbbf24", "#facc15", "#4ade80"][score];
+
+  return (
+    <div style={{ display: "grid", gap: 5, marginTop: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4 }}>
+        {[1, 2, 3, 4].map((item) => (
+          <span
+            key={item}
+            style={{
+              height: 3,
+              borderRadius: 999,
+              background: item <= score ? color : "rgba(255,255,255,0.12)",
+            }}
+          />
+        ))}
+      </div>
+      <span style={{ color, fontSize: 11 }}>{label}</span>
+    </div>
+  );
+}
+
+export default function RegisterPage() {
+  const [form, setForm] = useState<Form>({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     password: "",
-    role: "CUSTOMER",
   });
+  const [errors, setErrors] = useState<Errs>({});
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading,    setIsLoading]    = useState(false);
-  const [showSuccess,  setShowSuccess]  = useState(false);
-  const [error,        setError]        = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-
-    // Client-side validation
-    if (!form.firstName.trim()) { setError("First name is required."); return; }
-    if (!form.email.trim())     { setError("Email address is required."); return; }
-    if (form.password && form.password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const data = await fetcher("/api/auth/register", {
-        method: "POST",
-        body: JSON.stringify(form),
-      });
-      window.localStorage.setItem("sewalink_token", data.token);
-      setShowSuccess(true);
-      setTimeout(() => router.push("/dashboard"), 1400);
-    } catch (err: any) {
-      setError(err.message ?? "Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+  const set = (key: keyof Form) => (value: string) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setErrors((current) => ({ ...current, [key]: undefined }));
   };
 
-  // ── Input class helper ──────────────────────────────────────────────────────
-  const inputCls = (extra = "") =>
-    `w-full bg-white/[0.05] border border-white/[0.08] rounded-xl py-2.5 text-[12.5px] text-white placeholder:text-white/20 outline-none transition-all duration-200 focus:border-amber-500/60 focus:bg-amber-500/[0.05] focus:shadow-[0_0_0_3px_rgba(245,158,11,0.10)] ${extra}`;
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors = validate(form);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+
+    setLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    setLoading(false);
+    setSuccess(true);
+  };
 
   return (
-    <div
-      className="min-h-screen w-full lg:grid lg:grid-cols-[52%_1fr]"
-      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-    >
-      {/* ══════════════════════════════════════════════════════════════════
-          LEFT PANEL
-      ══════════════════════════════════════════════════════════════════ */}
-      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-[#0d1117] via-[#0a0d18] to-[#0c1020] px-12 py-10">
+    <main style={{
+      minHeight: "100vh",
+      background: "#060810",
+      color: "#fff",
+      fontFamily: "'Inter','Segoe UI',system-ui,sans-serif",
+    }}>
+      <div style={{ height: 2, background: "linear-gradient(90deg,transparent,#f59e0b,transparent)" }} />
 
-        {/* Top accent line */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/35 to-transparent" />
-
-        {/* Glow blobs — inline filter:blur to avoid Tailwind purge issues */}
-        <div
-          className="pointer-events-none absolute -top-20 -left-20 h-80 w-80 rounded-full bg-orange-400/[0.13]"
-          style={{ filter: "blur(120px)" }}
-        />
-        <div
-          className="pointer-events-none absolute -bottom-16 -right-16 h-72 w-72 rounded-full bg-indigo-500/[0.10]"
-          style={{ filter: "blur(120px)" }}
-        />
-
-        {/* Dot grid */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)",
+      <div className="auth-grid" style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0,1.05fr) minmax(390px,0.95fr)",
+        minHeight: "calc(100vh - 2px)",
+      }}>
+        <section className="auth-left" style={{
+          position: "relative",
+          overflow: "hidden",
+          padding: 56,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          background: "linear-gradient(135deg,#0d1117 0%,#111827 52%,#15100a 100%)",
+        }}>
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            opacity: 0.06,
+            backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.8) 1px,transparent 1px)",
             backgroundSize: "28px 28px",
-          }}
-        />
+          }} />
 
-        {/* ── TOP: Logo + copy ── */}
-        <div className="relative z-10">
-          {/* Logo */}
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-10 no-underline group">
-            {/* SVG icon mark */}
-            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-gradient-to-br from-amber-400 to-orange-500 shadow-[0_4px_18px_rgba(245,158,11,0.40)] transition-shadow duration-200 group-hover:shadow-[0_4px_28px_rgba(245,158,11,0.55)]">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path
-                  d="M4 9C4 6.24 6.24 4 9 4s5 2.24 5 5-2.24 5-5 5"
-                  stroke="#fff"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M9 14c2.76 0 5-2.24 5-5S11.76 4 9 4"
-                  stroke="#fff"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeOpacity="0.45"
-                />
-                <circle cx="4" cy="9" r="1.5" fill="#fff" />
-                <circle cx="14" cy="9" r="1.5" fill="#fff" fillOpacity="0.45" />
-              </svg>
-            </span>
-            <span className="text-[19px] font-extrabold tracking-[-0.4px]">
-              <span className="text-white">Sewa</span>
-              <span className="text-amber-400">Link</span>
-            </span>
-          </Link>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <BrandLogo />
 
-          {/* Overline */}
-          <p className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[1.8px] text-amber-500">
-            Home Services Marketplace
-          </p>
+            <div style={{
+              marginTop: 64,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              border: "1px solid rgba(245,158,11,0.24)",
+              borderRadius: 999,
+              background: "rgba(245,158,11,0.09)",
+              color: "#fbbf24",
+              fontSize: 11,
+              fontWeight: 800,
+              padding: "6px 13px",
+              textTransform: "uppercase",
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: 999, background: "#f59e0b" }} />
+              Private build
+            </div>
 
-          {/* Headline */}
-          <h1 className="mb-3 text-[30px] font-extrabold leading-[1.18] tracking-[-0.7px] text-white">
-            Book skilled<br />
-            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-              local experts
-            </span>
-            <br />
-            in minutes.
-          </h1>
+            <h1 style={{
+              maxWidth: 570,
+              margin: "24px 0 0",
+              fontSize: 54,
+              fontWeight: 900,
+              lineHeight: 1.05,
+            }}>
+              Create a test account for swealink.in.
+            </h1>
+            <p style={{
+              maxWidth: 470,
+              margin: "20px 0 0",
+              color: "rgba(255,255,255,0.58)",
+              fontSize: 16,
+              lineHeight: 1.7,
+            }}>
+              Registration is ready for development testing. Public customer and provider
+              onboarding can be added when the marketplace is ready to launch.
+            </p>
 
-          {/* Subtext */}
-          <p className="mb-5 max-w-[320px] text-[12.5px] leading-relaxed text-white/[0.38]">
-            SewaLink connects you with verified, background-checked professionals for every home service need — fast, safe, and transparent.
-          </p>
-
-          {/* Service chips */}
-          <div className="flex flex-wrap gap-1.5">
-            {CHIPS.map((c) => (
-              <span
-                key={c.label}
-                className="inline-flex cursor-default items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/60 transition-all duration-200 hover:border-amber-400/35 hover:bg-amber-400/[0.07] hover:text-amber-300"
-              >
-                {c.icon} {c.label}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── BOTTOM: Stats + testimonial ── */}
-        <div className="relative z-10">
-          {/* Stats row */}
-          <div className="mb-5 flex gap-8 border-t border-white/[0.06] pt-4">
-            {[
-              { val: "12K+", lbl: "Verified experts" },
-              { val: "98%",  lbl: "Satisfaction rate" },
-              { val: "3 min", lbl: "Avg. booking time" },
-            ].map((s) => (
-              <div key={s.lbl}>
-                <div className="text-[15px] font-extrabold text-white">{s.val}</div>
-                <div className="text-[10px] text-white/30">{s.lbl}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Testimonial card */}
-          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.04] p-4 backdrop-blur-sm">
-            {/* Stars */}
-            <div className="mb-2 flex gap-0.5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <svg key={i} width="11" height="11" viewBox="0 0 12 12" fill="#f59e0b">
-                  <path d="M6 1l1.39 2.82L10.5 4.27l-2.25 2.19.53 3.09L6 8.02 3.22 9.55l.53-3.09L1.5 4.27l3.11-.45L6 1z" />
-                </svg>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5,minmax(0,1fr))",
+              gap: 10,
+              maxWidth: 560,
+              marginTop: 34,
+            }}>
+              {SERVICES.map(({ Icon, label }) => (
+                <div key={label} style={{
+                  minHeight: 82,
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  background: "rgba(255,255,255,0.045)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  textAlign: "center",
+                }}>
+                  <Icon size={20} color="#f59e0b" />
+                  <span style={{ color: "rgba(255,255,255,0.64)", fontSize: 12, fontWeight: 600 }}>{label}</span>
+                </div>
               ))}
             </div>
-            <p className="mb-3 text-[11.5px] italic leading-relaxed text-white/45">
-              "Found a reliable plumber within 10 minutes. The whole process was seamless — booking, payment, everything."
-            </p>
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-white">
-                RK
-              </span>
-              <div>
-                <div className="text-[11px] font-semibold text-white/50">Rajesh K.</div>
-                <div className="text-[10px] text-white/25">Homeowner, Kathmandu</div>
-              </div>
-            </div>
           </div>
-        </div>
-      </div>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          RIGHT PANEL
-      ══════════════════════════════════════════════════════════════════ */}
-      <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#060810] px-6 py-12 sm:px-10">
-
-        {/* Top accent */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
-
-        <div className="w-full max-w-[380px]">
-
-          {/* Mobile logo */}
-          <Link href="/" className="mb-8 inline-flex items-center gap-2 no-underline lg:hidden">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gradient-to-br from-amber-400 to-orange-500 text-[13px] font-black text-white">S</span>
-            <span className="text-[17px] font-extrabold">
-              <span className="text-white">Sewa</span>
-              <span className="text-amber-400">Link</span>
-            </span>
-          </Link>
-
-          {showSuccess ? (
-            /* ── SUCCESS STATE ─────────────────────────────────────────── */
-            <div className="flex flex-col items-center gap-3.5 py-5 text-center animate-fade-in-up">
-              <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-amber-500/25 bg-amber-500/[0.12]">
-                <CheckCircle2 size={28} className="text-amber-400" />
+          <div style={{ position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, maxWidth: 660 }}>
+            {BUILD_STEPS.map(({ Icon, title, text }) => (
+              <div key={title} style={{
+                border: "1px solid rgba(255,255,255,0.09)",
+                borderRadius: 8,
+                background: "rgba(255,255,255,0.04)",
+                padding: 16,
+              }}>
+                <Icon size={18} color="#f59e0b" />
+                <p style={{ margin: "12px 0 0", color: "#fff", fontSize: 14, fontWeight: 800 }}>{title}</p>
+                <p style={{ margin: "5px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 13, lineHeight: 1.5 }}>{text}</p>
               </div>
-              <div>
-                <h2 className="text-[20px] font-extrabold text-white">Account created!</h2>
-                <p className="mt-1 text-[12.5px] text-white/35">
-                  Welcome to SewaLink. Redirecting you to your dashboard…
-                </p>
-              </div>
-              <Link
-                href="/dashboard"
-                className="mt-1 inline-flex items-center gap-2 rounded-[11px] bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-2.5 text-[13px] font-bold text-black shadow-[0_4px_20px_rgba(245,158,11,0.28)] transition-all duration-200 hover:opacity-90 hover:-translate-y-px no-underline"
-              >
-                Go to dashboard <ArrowRight size={14} />
-              </Link>
-            </div>
-          ) : (
-            /* ── FORM ──────────────────────────────────────────────────── */
-            <>
-              {/* Heading */}
-              <h2 className="mb-1 text-[22px] font-extrabold tracking-tight text-white">
-                Create your account
-              </h2>
-              <p className="mb-5 text-[12px] text-white/35">
-                Join the SewaLink marketplace — it takes under a minute.
-              </p>
+            ))}
+          </div>
+        </section>
 
-              {/* Role toggle */}
-              <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl border border-white/[0.07] bg-white/[0.04] p-1">
-                {(["CUSTOMER", "PROVIDER"] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, role: r }))}
-                    className={`rounded-[9px] py-2 text-[12px] font-semibold transition-all duration-200 ${
-                      form.role === r
-                        ? "bg-amber-500 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
-                        : "text-white/35 hover:text-white/60"
-                    }`}
-                  >
-                    {r === "CUSTOMER" ? "I need help" : "I offer services"}
-                  </button>
-                ))}
-              </div>
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-
-                {/* First + Last name */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="First name">
-                    <div className="relative">
-                      <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                      <input
-                        value={form.firstName}
-                        onChange={set("firstName")}
-                        placeholder="Aarav"
-                        className={inputCls("pl-9 pr-3")}
-                      />
-                    </div>
-                  </Field>
-                  <Field label="Last name">
-                    <div className="relative">
-                      <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                      <input
-                        value={form.lastName}
-                        onChange={set("lastName")}
-                        placeholder="Sharma"
-                        className={inputCls("pl-9 pr-3")}
-                      />
-                    </div>
-                  </Field>
+        <section style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "44px 38px",
+          borderLeft: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <div style={{ width: "100%", maxWidth: 430 }}>
+            {!success ? (
+              <div style={{ display: "grid", gap: 22 }}>
+                <div style={{ display: "grid", gap: 22 }}>
+                  <BrandLogo />
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: 30, fontWeight: 900 }}>Create account</h2>
+                    <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 14 }}>
+                      Set up a development account for testing the product.
+                    </p>
+                  </div>
                 </div>
 
-                {/* Email */}
-                <Field label="Email address">
-                  <div className="relative">
-                    <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={set("email")}
-                      placeholder="you@example.com"
-                      className={inputCls("pl-9 pr-3")}
+                <form onSubmit={handleSubmit} noValidate style={{ display: "grid", gap: 15 }}>
+                  <div className="name-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <Field
+                      id="firstName"
+                      label="First name"
+                      placeholder="Aarav"
+                      value={form.firstName}
+                      onChange={set("firstName")}
+                      error={errors.firstName}
+                      IconEl={User}
+                    />
+                    <Field
+                      id="lastName"
+                      label="Last name"
+                      placeholder="Sharma"
+                      value={form.lastName}
+                      onChange={set("lastName")}
+                      error={errors.lastName}
+                      IconEl={User}
                     />
                   </div>
-                </Field>
 
-                {/* Phone */}
-                <Field label="Phone number">
-                  <div className="relative">
-                    <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={set("phone")}
-                      placeholder="+977 98XXXXXXXX"
-                      className={inputCls("pl-9 pr-3")}
-                    />
-                  </div>
-                </Field>
+                  <Field
+                    id="email"
+                    label="Email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={form.email}
+                    onChange={set("email")}
+                    error={errors.email}
+                    IconEl={Mail}
+                  />
 
-                {/* Password */}
-                <Field label="Create password">
-                  <div className="relative">
-                    <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                    <input
+                  <Field
+                    id="phone"
+                    label="Phone"
+                    type="tel"
+                    placeholder="+977 98XXXXXXXX"
+                    value={form.phone}
+                    onChange={set("phone")}
+                    error={errors.phone}
+                    IconEl={Phone}
+                  />
+
+                  <div>
+                    <Field
+                      id="password"
+                      label="Password"
                       type={showPassword ? "text" : "password"}
+                      placeholder="Min 8 characters"
                       value={form.password}
                       onChange={set("password")}
-                      placeholder="Min. 8 characters"
-                      className={inputCls("pl-9 pr-10")}
+                      error={errors.password}
+                      IconEl={Lock}
+                      right={
+                        <button
+                          type="button"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          onClick={() => setShowPassword((current) => !current)}
+                          style={{ border: 0, background: "transparent", color: "rgba(255,255,255,0.42)", cursor: "pointer", padding: 0, display: "flex" }}
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      }
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors duration-200"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                    </button>
+                    <PasswordStrength password={form.password} />
                   </div>
-                </Field>
 
-                {/* Terms */}
-                <p className="my-1 text-center text-[10.5px] text-white/20">
-                  By creating an account you agree to our{" "}
-                  <Link href="#" className="text-amber-400/65 no-underline hover:text-amber-400 transition-colors">
-                    Terms
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="#" className="text-amber-400/65 no-underline hover:text-amber-400 transition-colors">
-                    Privacy Policy
-                  </Link>
-                  .
+                  <button type="submit" disabled={loading} style={{
+                    minHeight: 48,
+                    border: 0,
+                    borderRadius: 10,
+                    background: loading ? "rgba(245,158,11,0.55)" : "linear-gradient(135deg,#f59e0b,#ea580c)",
+                    color: "#111827",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    fontFamily: "inherit",
+                    fontSize: 14,
+                    fontWeight: 900,
+                  }}>
+                    {loading ? "Creating account..." : <>Create account <ArrowRight size={16} /></>}
+                  </button>
+                </form>
+
+                <p style={{ margin: 0, color: "rgba(255,255,255,0.32)", fontSize: 12, lineHeight: 1.6, textAlign: "center" }}>
+                  By registering, you can test the account flow. Terms and privacy pages can be connected before public launch.
                 </p>
 
-                {/* Error */}
-                {error && (
-                  <div className="rounded-xl border border-red-500/[0.18] bg-red-500/[0.08] px-3 py-2.5 text-[11.5px] text-red-300">
-                    {error}
-                  </div>
-                )}
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`flex w-full items-center justify-center gap-2 rounded-[11px] bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-[13px] font-bold text-black shadow-[0_4px_20px_rgba(245,158,11,0.28)] transition-all duration-200 hover:opacity-90 hover:-translate-y-px active:scale-[0.98] ${
-                    isLoading ? "cursor-not-allowed opacity-70" : ""
-                  }`}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      Creating account…
-                    </>
-                  ) : (
-                    <>
-                      Create Account
-                      <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Sign in link */}
-              <p className="mt-3.5 text-center text-[11.5px] text-white/25">
-                Already have an account?{" "}
-                <Link href="/login" className="font-semibold text-amber-400/75 no-underline hover:text-amber-400 transition-colors duration-200">
-                  Sign in
-                </Link>
-              </p>
-
-              {/* Social proof */}
-              <div className="mt-3.5 flex items-center justify-center gap-2.5 border-t border-white/[0.05] pt-3.5">
-                <div className="flex items-center">
-                  {AVATAR_GRADIENTS.map((g, i) => (
-                    <span
-                      key={i}
-                      className={`flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#060810] bg-gradient-to-br ${g} text-[9px] font-bold text-white ${i > 0 ? "-ml-1.5" : ""}`}
-                    >
-                      {AVATAR_INITIALS[i]}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-[10.5px] text-white/[0.22]">
-                  Join <span className="font-bold text-white/40">2,400+</span> early members
+                <p style={{ margin: 0, textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
+                  Already have an account?{" "}
+                  <Link href="/login" style={{ color: "#f59e0b", fontWeight: 800, textDecoration: "none" }}>
+                    Sign in
+                  </Link>
                 </p>
               </div>
-            </>
-          )}
-        </div>
+            ) : (
+              <div style={{ display: "grid", justifyItems: "center", gap: 18, textAlign: "center" }}>
+                <CheckCircle2 size={58} color="#f59e0b" />
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>Account created</h2>
+                  <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.48)", lineHeight: 1.6 }}>
+                    Thanks, <strong style={{ color: "#fff" }}>{form.firstName}</strong>. This is a demo success state for the development build.
+                  </p>
+                </div>
+                <Link href="/dashboard" style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg,#f59e0b,#ea580c)",
+                  color: "#111827",
+                  fontWeight: 900,
+                  padding: "13px 26px",
+                  textDecoration: "none",
+                }}>
+                  Go to dashboard <ArrowRight size={16} />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSuccess(false);
+                    setErrors({});
+                    setForm({ firstName: "", lastName: "", email: "", phone: "", password: "" });
+                  }}
+                  style={{
+                    border: 0,
+                    background: "transparent",
+                    color: "rgba(255,255,255,0.38)",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    fontSize: 12,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Register another account
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
-    </div>
+
+      <style>{`
+        * { box-sizing: border-box; }
+        input::placeholder { color: rgba(255,255,255,0.24); }
+        input:-webkit-autofill {
+          -webkit-box-shadow: 0 0 0 1000px #10141f inset !important;
+          -webkit-text-fill-color: #fff !important;
+        }
+        @media (max-width: 1024px) {
+          .auth-grid { grid-template-columns: 1fr !important; }
+          .auth-left { display: none !important; }
+        }
+        @media (max-width: 560px) {
+          .name-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </main>
   );
 }
