@@ -7,19 +7,19 @@ import { sendSuccess, sendError } from "../utils/apiResponse";
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
 
 /**
- * Senior Production-Grade User Registration Controller
- * Normalizes input data strings, stages safe transaction queries, hashes credentials, and provisions dependent schemas.
+ * User Registration Controller
+ * Validates input parameters, checks constraints, hashes passwords, and saves records.
  */
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, phone, password, firstName, lastName, role } = req.body;
 
-    // 1. Defensively guard core application criteria requirements
+    // Validate required fields
     if (!email || !password || !firstName || !lastName) {
       return sendError(res, "Missing required onboarding fields. Validation constraints breached.", 400);
     }
 
-    // 2. Identify conflicting structural entries inside unique data columns before executing transactions
+    // Check for conflicting unique entries
     const existing = await prisma.user.findFirst({
       where: {
         OR: [
@@ -33,11 +33,11 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       return sendError(res, "Conflict error. Email address or phone number is already registered.", 409);
     }
 
-    // 3. Apply strong computation hashing steps across raw plaintext passwords
+    // Hash the plain text password configuration securely
     const hashedPassword = await bcrypt.hash(password, 12);
     const standardRole = role === "PROVIDER" ? "PROVIDER" : "CUSTOMER";
 
-    // 4. Dispatch transactional execution sequences down the Prisma data mapper engine layers
+    // Build user records and relational schemas down the database pipeline
     const created = await prisma.user.create({
       data: {
         firstName: firstName.trim(),
@@ -46,7 +46,6 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         phone: phone ? phone.trim() : null,
         password: hashedPassword,
         role: standardRole,
-        // Programmatically bundle an empty provider baseline grid if the user registers as a professional
         providerProfile:
           standardRole === "PROVIDER"
             ? {
@@ -70,7 +69,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       },
     });
 
-    // 5. Package the session access parameters inside standard signature tokens
+    // Sign the secure access token
     const token = jwt.sign(
       { id: created.id, email: created.email, role: created.role },
       JWT_SECRET,
@@ -88,8 +87,8 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 };
 
 /**
- * Senior Production-Grade User Login Controller
- * Authenticates normalization structures against relational indexes and generates tokens.
+ * User Login Controller
+ * Authenticates login variables and issues tracking JSON Web Tokens.
  */
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -99,7 +98,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return sendError(res, "Missing authentication fields. Email/Phone and password are required.", 400);
     }
 
-    // 1. Identify valid unique target record locations within normalization lookups
+    // Match identity inside validation indexes
     const user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -113,13 +112,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return sendError(res, "Authentication failed. Invalid login credentials sequence.", 401);
     }
 
-    // 2. Compute plaintext password entries against your cryptographic data hashes
+    // Verify plaintext inputs against database password storage parameters
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return sendError(res, "Authentication failed. Invalid login credentials sequence.", 401);
     }
 
-    // 3. Write active session contexts onto standard signature payloads
+    // Sign active authorization token contexts
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       JWT_SECRET,
@@ -142,7 +141,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 };
 
 /**
- * Request Password Reset Token Pipeline Endpoint
+ * Request Password Reset Pipeline
  */
 export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -157,7 +156,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 };
 
 /**
- * Validate Dispatched OTP Codes and Provision Accelerated Temporary Session Contexts
+ * Validate Dispatched OTP Verification Codes
  */
 export const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -181,6 +180,45 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
     );
 
     return sendSuccess(res, "One-Time Password validation challenge completed successfully.", { token });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * User Session Profile Controller
+ * Resolves authentication metrics from middleware tokens for authorized dashboards.
+ */
+export const getMe = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Read user identity reference from payload middleware configurations
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      return sendError(res, "Unauthorized account session context reference. Access denied.", 401);
+    }
+
+    // Locate active user indexes inside the database model registers
+    const userRecord = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        createdAt: true,
+      },
+    });
+
+    if (!userRecord) {
+      return sendError(res, "Account reference file missing. User database record could not be found.", 404);
+    }
+
+    return sendSuccess(res, "User identity profile metrics resolved successfully.", {
+      user: userRecord,
+    });
   } catch (error) {
     return next(error);
   }
