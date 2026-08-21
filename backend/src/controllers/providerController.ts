@@ -57,9 +57,10 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
 
     const whereClause = conditions.length > 0 ? { AND: conditions } : {};
 
-    // 1. Senior Fallback Strategy: Separate operations to prevent Prisma sub-selection transaction crashes
+    // 1. Decoupled Count Query to guard transaction speed boundaries
     const total = await prisma.providerProfile.count({ where: whereClause });
     
+    // 2. Fetch matched datasets matching absolute Prisma schemas
     const providers = await prisma.providerProfile.findMany({
       where: whereClause,
       include: {
@@ -71,12 +72,11 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
             email: true,
             phone: true,
             role: true,
-            avatarUrl: true,
+            // CRITICAL FIX: Non-existent avatarUrl field removed to prevent client select exceptions
           },
         },
         skills: true,
         portfolioImages: true,
-        // 2. CRITICAL FIX: Direct safe selection of categories matching database relation tables
         categories: { 
           include: { 
             category: true 
@@ -118,7 +118,7 @@ export const getProviderById = async (req: Request, res: Response, next: NextFun
             email: true,
             phone: true,
             role: true,
-            avatarUrl: true,
+            // CRITICAL FIX: Non-existent avatarUrl field removed to prevent single lookup exceptions
           },
         },
         skills: true,
