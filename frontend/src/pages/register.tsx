@@ -2,496 +2,274 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { fetcher } from "../lib/api";
 import {
   ArrowRight,
   CheckCircle2,
-  Clock,
-  Eye,
-  EyeOff,
-  Hammer,
   Lock,
   Mail,
-  MapPin,
-  Paintbrush,
   Phone,
-  ShieldCheck,
-  Sparkles,
   User,
   Wrench,
-  Zap,
+  Briefcase,
+  ShieldAlert,
+  Layers,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
-const SERVICES = [
-  { Icon: Wrench, label: "Plumbing" },
-  { Icon: Zap, label: "Electrical" },
-  { Icon: Hammer, label: "Repair work" },
-  { Icon: Paintbrush, label: "Painting" },
-  { Icon: Sparkles, label: "Cleaning" },
-];
-
-const BUILD_STEPS = [
-  { Icon: User, title: "Create test accounts", text: "Use registration to validate the onboarding flow." },
-  { Icon: ShieldCheck, title: "Prepare verification", text: "Provider and user checks can be added after the core flow is stable." },
-  { Icon: MapPin, title: "Launch by location", text: "Start with a focused service area before opening public signups." },
-  { Icon: Clock, title: "Add bookings later", text: "Keep the current phase simple, then connect scheduling and payments." },
-];
-
-interface Form {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  password: string;
-}
-
-interface Errs {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  password?: string;
-}
-
-function validate(form: Form): Errs {
-  const errors: Errs = {};
-  if (!form.firstName.trim()) errors.firstName = "Required";
-  if (!form.lastName.trim()) errors.lastName = "Required";
-  if (!form.email.trim()) errors.email = "Required";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = "Invalid email";
-  if (!form.phone.trim()) errors.phone = "Required";
-  else if (!/^[+\d\s\-()]{7,}$/.test(form.phone)) errors.phone = "Invalid number";
-  if (!form.password) errors.password = "Required";
-  else if (form.password.length < 8) errors.password = "Min 8 characters";
-  return errors;
-}
-
-function BrandLogo() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-      <div style={{
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        background: "linear-gradient(135deg,#f59e0b,#ea580c)",
-        color: "#111827",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "0 10px 30px rgba(245,158,11,0.28)",
-      }}>
-        <Wrench size={20} strokeWidth={2.5} />
-      </div>
-      <div>
-        <div style={{ fontSize: 19, fontWeight: 900, lineHeight: 1, color: "#fff" }}>swealink.in</div>
-        <div style={{ marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.38)" }}>Local services platform</div>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  id,
-  label,
-  type = "text",
-  placeholder,
-  value,
-  onChange,
-  error,
-  IconEl,
-  right,
-}: {
-  id: string;
-  label: string;
-  type?: string;
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-  IconEl: React.ElementType;
-  right?: React.ReactNode;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label htmlFor={id} style={{
-        color: "rgba(255,255,255,0.48)",
-        fontSize: 11,
-        fontWeight: 700,
-        textTransform: "uppercase",
-      }}>
-        {label}
-      </label>
-      <div style={{ position: "relative" }}>
-        <IconEl size={15} style={{
-          position: "absolute",
-          left: 14,
-          top: "50%",
-          transform: "translateY(-50%)",
-          color: error ? "#f87171" : "rgba(255,255,255,0.34)",
-          pointerEvents: "none",
-        }} />
-        <input
-          id={id}
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          style={{
-            width: "100%",
-            border: `1px solid ${error ? "rgba(248,113,113,0.65)" : "rgba(255,255,255,0.12)"}`,
-            borderRadius: 10,
-            background: error ? "rgba(248,113,113,0.07)" : "rgba(255,255,255,0.045)",
-            color: "#fff",
-            fontFamily: "inherit",
-            fontSize: 14,
-            outline: "none",
-            padding: right ? "13px 44px 13px 42px" : "13px 14px 13px 42px",
-          }}
-        />
-        {right && (
-          <div style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)" }}>
-            {right}
-          </div>
-        )}
-      </div>
-      {error && <span style={{ color: "#f87171", fontSize: 12 }}>{error}</span>}
-    </div>
-  );
-}
-
-function PasswordStrength({ password }: { password: string }) {
-  if (!password) return null;
-
-  const score =
-    (password.length >= 8 ? 1 : 0) +
-    (/[A-Z]/.test(password) ? 1 : 0) +
-    (/\d/.test(password) ? 1 : 0) +
-    (/[^A-Za-z0-9]/.test(password) ? 1 : 0);
-
-  const label = ["", "Weak", "Fair", "Good", "Strong"][score];
-  const color = ["", "#f87171", "#fbbf24", "#facc15", "#4ade80"][score];
-
-  return (
-    <div style={{ display: "grid", gap: 5, marginTop: 8 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4 }}>
-        {[1, 2, 3, 4].map((item) => (
-          <span
-            key={item}
-            style={{
-              height: 3,
-              borderRadius: 999,
-              background: item <= score ? color : "rgba(255,255,255,0.12)",
-            }}
-          />
-        ))}
-      </div>
-      <span style={{ color, fontSize: 11 }}>{label}</span>
-    </div>
-  );
-}
-
 export default function RegisterPage() {
-  const [form, setForm] = useState<Form>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    password: "",
-  });
-  const [errors, setErrors] = useState<Errs>({});
+  const router = useRouter();
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "" });
+  const [userType, setUserType] = useState<"customer" | "worker">("customer");
+  const [skill, setSkill] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [errors, setErrors] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [apiError, setApiError] = useState("");
 
-  const set = (key: keyof Form) => (value: string) => {
-    setForm((current) => ({ ...current, [key]: value }));
-    setErrors((current) => ({ ...current, [key]: undefined }));
+  const handleInputChange = (key: string, value: string) => {
+    setForm({ ...form, [key]: value });
+    setErrors({ ...errors, [key]: undefined });
+    setApiError("");
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const nextErrors = validate(form);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: any = {};
+    
+    if (!form.firstName.trim()) newErrors.firstName = "Required";
+    if (!form.lastName.trim()) newErrors.lastName = "Required";
+    if (!form.email.includes("@")) newErrors.email = "Invalid email";
+    
+    // प्रडक्सन लेभलको कडा नेपाली मोबाइल नम्बर जाँच
+    const phoneRegex = /^(98|97)\d{8}$/;
+    if (!form.phone.trim()) {
+      newErrors.phone = "Required";
+    } else if (!phoneRegex.test(form.phone.trim())) {
+      newErrors.phone = "Must be valid Nepal number (98/97...)";
+    }
 
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    setLoading(false);
-    setSuccess(true);
+    if (form.password.length < 8) newErrors.password = "Min 8 chars";
+
+    if (!agreeTerms) {
+      setApiError("You must agree to the Terms of Service and Privacy Policy.");
+      return;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await fetcher("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.toLowerCase().trim(),
+          phone: form.phone.trim(),
+          password: form.password,
+          role: userType === "worker" ? "PROVIDER" : "CUSTOMER",
+          skill: userType === "worker" ? skill : undefined,
+        }),
+      });
+      setSuccess(true);
+    } catch (err: any) {
+      setApiError(err?.message || "Registration failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <main style={{
-      minHeight: "100vh",
-      background: "#060810",
-      color: "#fff",
-      fontFamily: "'Inter','Segoe UI',system-ui,sans-serif",
-    }}>
-      <div style={{ height: 2, background: "linear-gradient(90deg,transparent,#f59e0b,transparent)" }} />
-
-      <div className="auth-grid" style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0,1.05fr) minmax(390px,0.95fr)",
-        minHeight: "calc(100vh - 2px)",
-      }}>
-        <section className="auth-left" style={{
-          position: "relative",
-          overflow: "hidden",
-          padding: 56,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          background: "linear-gradient(135deg,#0d1117 0%,#111827 52%,#15100a 100%)",
-        }}>
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            opacity: 0.06,
-            backgroundImage: "radial-gradient(circle,rgba(255,255,255,0.8) 1px,transparent 1px)",
-            backgroundSize: "28px 28px",
-          }} />
-
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <BrandLogo />
-
-            <div style={{
-              marginTop: 64,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              border: "1px solid rgba(245,158,11,0.24)",
-              borderRadius: 999,
-              background: "rgba(245,158,11,0.09)",
-              color: "#fbbf24",
-              fontSize: 11,
-              fontWeight: 800,
-              padding: "6px 13px",
-              textTransform: "uppercase",
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: 999, background: "#f59e0b" }} />
-              Private build
+    <main className="main-container">
+      <div className="grid-container">
+        
+        {/* ── बायाँ भाग: प्रिमियम ब्राण्डिङ र हिरो प्यानल (Sidebar) ── */}
+        <section className="left-panel">
+          <div className="brand-header">
+            <div className="brand-icon">
+              <Wrench size={18} strokeWidth={2.5} />
             </div>
+            <div>
+              <div className="brand-name">Kamdar<span style={{ color: "#ff6b00" }}>Nepal</span></div>
+              <div className="brand-sub">Elite Service Platform</div>
+            </div>
+          </div>
 
-            <h1 style={{
-              maxWidth: 570,
-              margin: "24px 0 0",
-              fontSize: 54,
-              fontWeight: 900,
-              lineHeight: 1.05,
-            }}>
-              Create a test account for swealink.in.
+          <div className="hero-content">
+            <span className="badge"><Layers size={11} /> Enterprise Business Architecture</span>
+            <h1 className="hero-title" style={{ fontSize: "44px", fontWeight: 900, lineHeight: 1.15, letterSpacing: "-1px" }}>
+              Nepal's premier network for <span style={{ color: "#ff6b00" }}>verified</span> local workforce.
             </h1>
-            <p style={{
-              maxWidth: 470,
-              margin: "20px 0 0",
-              color: "rgba(255,255,255,0.58)",
-              fontSize: 16,
-              lineHeight: 1.7,
-            }}>
-              Registration is ready for development testing. Public customer and provider
-              onboarding can be added when the marketplace is ready to launch.
+            <p className="hero-p" style={{ fontSize: "15px", color: "#888", lineHeight: 1.65, marginTop: "16px" }}>
+              Connecting homes, offices, and construction sites with skilled professionals instantly. 
+              Your trusted on-demand ecosystem for smarter, hassle-free local labor hire across Nepal.
             </p>
-
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(5,minmax(0,1fr))",
-              gap: 10,
-              maxWidth: 560,
-              marginTop: 34,
-            }}>
-              {SERVICES.map(({ Icon, label }) => (
-                <div key={label} style={{
-                  minHeight: 82,
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 8,
-                  background: "rgba(255,255,255,0.045)",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  textAlign: "center",
-                }}>
-                  <Icon size={20} color="#f59e0b" />
-                  <span style={{ color: "rgba(255,255,255,0.64)", fontSize: 12, fontWeight: 600 }}>{label}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
-          <div style={{ position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, maxWidth: 660 }}>
-            {BUILD_STEPS.map(({ Icon, title, text }) => (
-              <div key={title} style={{
-                border: "1px solid rgba(255,255,255,0.09)",
-                borderRadius: 8,
-                background: "rgba(255,255,255,0.04)",
-                padding: 16,
-              }}>
-                <Icon size={18} color="#f59e0b" />
-                <p style={{ margin: "12px 0 0", color: "#fff", fontSize: 14, fontWeight: 800 }}>{title}</p>
-                <p style={{ margin: "5px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 13, lineHeight: 1.5 }}>{text}</p>
-              </div>
-            ))}
-          </div>
+          <div className="footer-text">Clean Architecture Compliance © 2026</div>
         </section>
 
-        <section style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "44px 38px",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-        }}>
-          <div style={{ width: "100%", maxWidth: 430 }}>
+        {/* ── दायाँ भाग: विलासी लक्जरी फारम (Form Block) ── */}
+        <section className="right-panel">
+          <div className="form-wrapper">
             {!success ? (
-              <div style={{ display: "grid", gap: 22 }}>
-                <div style={{ display: "grid", gap: 22 }}>
-                  <BrandLogo />
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: 30, fontWeight: 900 }}>Create account</h2>
-                    <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 14 }}>
-                      Set up a development account for testing the product.
-                    </p>
-                  </div>
+              <div className="fade-in">
+                <div className="header-block">
+                  <h2>Create Account</h2>
+                  <p>Access the high-fidelity cloud network.</p>
                 </div>
 
-                <form onSubmit={handleSubmit} noValidate style={{ display: "grid", gap: 15 }}>
-                  <div className="name-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <Field
-                      id="firstName"
-                      label="First name"
-                      placeholder="Aarav"
-                      value={form.firstName}
-                      onChange={set("firstName")}
-                      error={errors.firstName}
-                      IconEl={User}
-                    />
-                    <Field
-                      id="lastName"
-                      label="Last name"
-                      placeholder="Sharma"
-                      value={form.lastName}
-                      onChange={set("lastName")}
-                      error={errors.lastName}
-                      IconEl={User}
-                    />
+                <div className="tab-container">
+                  <button
+                    type="button"
+                    onClick={() => setUserType("customer")}
+                    className={`tab-btn ${userType === "customer" ? "active-customer" : ""}`}
+                  >
+                    <User size={13} /> Customer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserType("worker")}
+                    className={`tab-btn ${userType === "worker" ? "active-worker" : ""}`}
+                  >
+                    <Briefcase size={13} /> Kamdar
+                  </button>
+                </div>
+
+                {apiError && <div className="error-alert"><ShieldAlert size={14} />{apiError}</div>}
+
+                <form onSubmit={handleSubmit} className="actual-form">
+                  {userType === "worker" && (
+                    <div className="input-group">
+                      <label>Professional Trade</label>
+                      <select value={skill} onChange={(e) => setSkill(e.target.value)} className="luxury-input cursor-pointer">
+                        <option value="" disabled>-- Select Your Skill --</option>
+                        <option value="painter">Painter (पेन्टर)</option>
+                        <option value="electrician">Electrician (इलेक्ट्रिसियन)</option>
+                        <option value="plumber">Plumber (प्लम्बर)</option>
+                        <option value="carpenter">Carpenter (कार्पेन्टर)</option>
+                        <option value="construction">Construction Worker (मजदुर)</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="name-row">
+                    <div className="input-group">
+                      <label>First Name</label>
+                      <input type="text" placeholder="Aarav" value={form.firstName} onChange={(e) => handleInputChange("firstName", e.target.value)} className="luxury-input" />
+                      {errors.firstName && <span className="field-err">{errors.firstName}</span>}
+                    </div>
+                    <div className="input-group">
+                      <label>Last Name</label>
+                      <input type="text" placeholder="Sharma" value={form.lastName} onChange={(e) => handleInputChange("lastName", e.target.value)} className="luxury-input" />
+                      {errors.lastName && <span className="field-err">{errors.lastName}</span>}
+                    </div>
                   </div>
 
-                  <Field
-                    id="email"
-                    label="Email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={form.email}
-                    onChange={set("email")}
-                    error={errors.email}
-                    IconEl={Mail}
-                  />
-
-                  <Field
-                    id="phone"
-                    label="Phone"
-                    type="tel"
-                    placeholder="+977 98XXXXXXXX"
-                    value={form.phone}
-                    onChange={set("phone")}
-                    error={errors.phone}
-                    IconEl={Phone}
-                  />
-
-                  <div>
-                    <Field
-                      id="password"
-                      label="Password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Min 8 characters"
-                      value={form.password}
-                      onChange={set("password")}
-                      error={errors.password}
-                      IconEl={Lock}
-                      right={
-                        <button
-                          type="button"
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                          onClick={() => setShowPassword((current) => !current)}
-                          style={{ border: 0, background: "transparent", color: "rgba(255,255,255,0.42)", cursor: "pointer", padding: 0, display: "flex" }}
-                        >
-                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      }
-                    />
-                    <PasswordStrength password={form.password} />
+                  <div className="input-group">
+                    <label>Email Address</label>
+                    <input type="email" placeholder="name@domain.com" value={form.email} onChange={(e) => handleInputChange("email", e.target.value)} className="luxury-input" />
+                    {errors.email && <span className="field-err">{errors.email}</span>}
                   </div>
 
-                  <button type="submit" disabled={loading} style={{
-                    minHeight: 48,
-                    border: 0,
-                    borderRadius: 10,
-                    background: loading ? "rgba(245,158,11,0.55)" : "linear-gradient(135deg,#f59e0b,#ea580c)",
-                    color: "#111827",
-                    cursor: loading ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    fontFamily: "inherit",
-                    fontSize: 14,
-                    fontWeight: 900,
-                  }}>
-                    {loading ? "Creating account..." : <>Create account <ArrowRight size={16} /></>}
+                  <div className="input-group">
+                    <label>Phone Number (Nepal)</label>
+                    <input type="tel" placeholder="98XXXXXXXX" value={form.phone} onChange={(e) => handleInputChange("phone", e.target.value)} className="luxury-input" />
+                    {errors.phone && <span className="field-err">{errors.phone}</span>}
+                  </div>
+
+                  <div className="input-group">
+                    <label>Secure Password</label>
+                    <div style={{ position: "relative" }}>
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="••••••••" 
+                        value={form.password} 
+                        onChange={(e) => handleInputChange("password", e.target.value)} 
+                        className="luxury-input" 
+                        style={{ paddingRight: "40px" }}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", border: 0, background: "transparent", color: "#444", cursor: "pointer", display: "flex" }}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {errors.password && <span className="field-err">{errors.password}</span>}
+                  </div>
+
+                  <div className="checkbox-group">
+                    <input 
+                      type="checkbox" 
+                      id="terms-check" 
+                      checked={agreeTerms} 
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="luxury-checkbox"
+                    />
+                    <label htmlFor="terms-check">
+                      I agree to the <span className="highlight-text">Terms of Service</span> and <span className="highlight-text">Privacy Policy</span>.
+                    </label>
+                  </div>
+
+                  <button type="submit" disabled={loading} className={`submit-btn ${userType === 'customer' ? 'btn-blue' : 'btn-orange'}`}>
+                    {loading ? "Authorizing Token..." : <>{userType === "customer" ? "Register Identity" : "Register Token"} <ArrowRight size={14} /></>}
                   </button>
                 </form>
 
-                <p style={{ margin: 0, color: "rgba(255,255,255,0.32)", fontSize: 12, lineHeight: 1.6, textAlign: "center" }}>
-                  By registering, you can test the account flow. Terms and privacy pages can be connected before public launch.
-                </p>
+                <div className="divider-zone">
+                  <span className="line"></span>
+                  <span className="divider-text">Or register with</span>
+                  <span className="line"></span>
+                </div>
 
-                <p style={{ margin: 0, textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
-                  Already have an account?{" "}
-                  <Link href="/login" style={{ color: "#f59e0b", fontWeight: 800, textDecoration: "none" }}>
-                    Sign in
-                  </Link>
-                </p>
+                {/* आधिकारिक सोसल बटनहरू */}
+                <div className="social-grid">
+                  <button type="button" onClick={() => alert("Google Auth Linked")} className="social-btn btn-google">
+                    <svg className="social-svg" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    Google
+                  </button>
+
+                  <button type="button" onClick={() => alert("Facebook Auth Linked")} className="social-btn btn-facebook">
+                    <svg className="social-svg" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    Facebook
+                  </button>
+
+                  <button type="button" onClick={() => alert("Apple Auth Linked")} className="social-btn btn-apple">
+                    <svg className="social-svg" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.85c.66-.8 1.11-1.92.99-3.04-.96.04-2.12.64-2.8 1.44-.61.71-1.14 1.86-1 2.97 1.08.08 2.16-.57 2.81-1.37z"/>
+                    </svg>
+                    Apple
+                  </button>
+                </div>
+
+                <div className="footer-redirect">
+                  Already have registered nodes? <Link href="/login" className="login-link">Sign in</Link>
+                </div>
               </div>
             ) : (
-              <div style={{ display: "grid", justifyItems: "center", gap: 18, textAlign: "center" }}>
-                <CheckCircle2 size={58} color="#f59e0b" />
-                <div>
-                  <h2 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>Account created</h2>
-                  <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.48)", lineHeight: 1.6 }}>
-                    Thanks, <strong style={{ color: "#fff" }}>{form.firstName}</strong>. This is a demo success state for the development build.
-                  </p>
-                </div>
-                <Link href="/dashboard" style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  borderRadius: 10,
-                  background: "linear-gradient(135deg,#f59e0b,#ea580c)",
-                  color: "#111827",
-                  fontWeight: 900,
-                  padding: "13px 26px",
-                  textDecoration: "none",
-                }}>
-                  Go to dashboard <ArrowRight size={16} />
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSuccess(false);
-                    setErrors({});
-                    setForm({ firstName: "", lastName: "", email: "", phone: "", password: "" });
-                  }}
-                  style={{
-                    border: 0,
-                    background: "transparent",
-                    color: "rgba(255,255,255,0.38)",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    fontSize: 12,
-                    textDecoration: "underline",
-                  }}
-                >
-                  Register another account
+              <div className="success-box">
+                <CheckCircle2 size={48} color="#22c55e" style={{ margin: "0 auto 16px auto" }} />
+                <h2>Onboarding Complete</h2>
+                <p style={{ color: "#888", fontSize: "14px", marginTop: "8px" }}>Your official node signature has been compiled successfully.</p>
+                <button onClick={() => router.push("/dashboard")} className="submit-btn btn-blue" style={{ marginTop: "24px" }}>
+                  Launch Workspace →
                 </button>
               </div>
             )}
@@ -499,20 +277,68 @@ export default function RegisterPage() {
         </section>
       </div>
 
-      <style>{`
-        * { box-sizing: border-box; }
-        input::placeholder { color: rgba(255,255,255,0.24); }
-        input:-webkit-autofill {
-          -webkit-box-shadow: 0 0 0 1000px #10141f inset !important;
-          -webkit-text-fill-color: #fff !important;
+      <style jsx global>{`
+        body { margin: 0; background: #03050a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .main-container { min-height: 100vh; display: flex; flex-direction: column; background: #03050a; }
+        .grid-container { display: grid; grid-template-columns: 1.1fr 0.9fr; min-height: 100vh; }
+        .left-panel { background: #050811; padding: 60px; display: flex; flex-direction: column; justify-content: space-between; position: relative; border-right: 1px solid rgba(255,255,255,0.02); }
+        .brand-header { display: flex; align-items: center; gap: 12px; }
+        .brand-icon { width: 38px; height: 38px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); }
+        .brand-name { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+        .brand-sub { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+        .hero-content { max-width: 460px; margin: auto 0; }
+        .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hero-title { font-size: 46px; font-weight: 900; line-height: 1.1; margin: 24px 0 16px 0; letter-spacing: -1px; }
+        .hero-p { color: #888; font-size: 15px; line-height: 1.6; }
+        .footer-text { font-size: 11px; color: #444; font-family: monospace; }
+        .right-panel { display: flex; align-items: center; justify-content: center; padding: 40px; background: #03050a; }
+        .form-wrapper { width: 100%; max-width: 370px; }
+        .header-block h2 { font-size: 26px; font-weight: 900; margin: 0; letter-spacing: -0.5px; }
+        .header-block p { color: #666; font-size: 13px; margin: 6px 0 0 0; }
+        .tab-container { display: flex; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 3px; border-radius: 12px; margin: 28px 0; }
+        .tab-btn { flex: 1; border: 0; outline: none; background: transparent; color: #666; height: 38px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+        .tab-btn:hover { color: #fff; }
+        .active-customer { background: #2563eb !important; color: #fff !important; box-shadow: 0 4px 15px rgba(37,99,235,0.2); }
+        .active-worker { background: #ff5500 !important; color: #fff !important; box-shadow: 0 4px 15px rgba(255,85,0,0.2); }
+        .actual-form { display: flex; flex-direction: column; gap: 16px; }
+        .name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group label { font-size: 10px; font-weight: 800; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+        .luxury-input {
+          width: 100% !important; height: 44px !important; background: rgba(255,255,255,0.02) !important;
+          border: 1px solid rgba(255,255,255,0.07) !important; border-radius: 10px !important;
+          color: #fff !important; padding: 0 14px !important; font-size: 13px !important;
+          outline: none !important; box-sizing: border-box !important; transition: all 0.2s !important;
+          appearance: none !important; -webkit-appearance: none !important;
         }
-        @media (max-width: 1024px) {
-          .auth-grid { grid-template-columns: 1fr !important; }
-          .auth-left { display: none !important; }
-        }
-        @media (max-width: 560px) {
-          .name-grid { grid-template-columns: 1fr !important; }
-        }
+        .luxury-input:focus { border-color: rgba(59,130,246,0.4) !important; background: rgba(255,255,255,0.04) !important; }
+        select.luxury-input { background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") !important; background-repeat: no-repeat !important; background-position: right 14px center !important; }
+        .checkbox-group { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; }
+        .luxury-checkbox { margin-top: 2px; width: 14px; height: 14px; accent-color: #2563eb; cursor: pointer; }
+        .checkbox-group label { font-size: 12px; color: #666; font-weight: 500; line-height: 1.4; cursor: pointer; }
+        .highlight-text { color: #888; font-weight: 700; text-decoration: underline; }
+        .field-err { font-size: 11px; color: #f87171; font-weight: 600; text-align: left; }
+        .submit-btn { width: 100%; height: 44px; border: 0; outline: none; border-radius: 10px; color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; transition: all 0.2s; }
+        .btn-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 4px 20px rgba(37,99,235,0.15); }
+        .btn-orange { background: linear-gradient(135deg, #ff5500, #dd3c00); box-shadow: 0 4px 20px rgba(255,85,0,0.15); }
+        .submit-btn:active { transform: scale(0.99); }
+        .divider-zone { display: flex; align-items: center; gap: 10px; margin: 24px 0; }
+        .line { flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
+        .divider-text { font-size: 11px; color: #444; font-weight: 600; text-transform: uppercase; }
+        .social-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .social-btn { height: 42px; border: 0; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; outline: none; }
+        .btn-google { background: #ffffff !important; color: #1f2937 !important; border: 1px solid #e5e7eb !important; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .btn-google:hover { background: #f9fafb !important; }
+        .btn-facebook { background: #1877F2 !important; color: #ffffff !important; box-shadow: 0 2px 8px rgba(24,119,242,0.2); }
+        .btn-facebook:hover { background: #166fe5 !important; }
+        .btn-apple { background: #000000 !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.15) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .btn-apple:hover { background: #111111 !important; }
+        .social-svg { width: 15px; height: 15px; }
+        .footer-redirect { text-align: center; font-size: 13px; color: #555; margin-top: 28px; }
+        .login-link { color: #2563eb; text-decoration: none; font-weight: 700; }
+        .error-alert { padding: 12px; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15); color: #f87171; border-radius: 10px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+        .success-box { text-align: center; padding: 20px; }
+        @media (max-width: 1024px) { .grid-container { grid-template-columns: 1fr; } .left-panel { display: none; } }
       `}</style>
     </main>
   );
