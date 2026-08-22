@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetcher } from "../lib/api";
@@ -16,7 +16,8 @@ import {
   ShieldAlert,
   Layers,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronDown
 } from "lucide-react";
 
 export default function RegisterPage() {
@@ -31,6 +32,27 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const [apiError, setApiError] = useState("");
 
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const skillsList = [
+    { value: "painter", label: "Painter (पेन्टर)" },
+    { value: "electrician", label: "Electrician (इलेक्ट्रिसियन)" },
+    { value: "plumber", label: "Plumber (प्लम्बर)" },
+    { value: "carpenter", label: "Carpenter (कार्पेन्टर)" },
+    { value: "construction", label: "Construction Worker (मजदुर)" }
+  ];
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleInputChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
     setErrors({ ...errors, [key]: undefined });
@@ -40,12 +62,11 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: any = {};
-    
+
     if (!form.firstName.trim()) newErrors.firstName = "Required";
     if (!form.lastName.trim()) newErrors.lastName = "Required";
     if (!form.email.includes("@")) newErrors.email = "Invalid email";
-    
-    // प्रडक्सन लेभलको कडा नेपाली मोबाइल नम्बर जाँच
+
     const phoneRegex = /^(98|97)\d{8}$/;
     if (!form.phone.trim()) {
       newErrors.phone = "Required";
@@ -62,6 +83,11 @@ export default function RegisterPage() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      return;
+    }
+
+    if (userType === "worker" && !skill) {
+      setApiError("Please select your professional trade.");
       return;
     }
 
@@ -91,7 +117,7 @@ export default function RegisterPage() {
     <main className="main-container">
       <div className="grid-container">
         
-        {/* ── बायाँ भाग: प्रिमियम ब्राण्डिङ र हिरो प्यानल (Sidebar) ── */}
+        {/* Sidebar Panel */}
         <section className="left-panel">
           <div className="brand-header">
             <div className="brand-icon">
@@ -105,10 +131,10 @@ export default function RegisterPage() {
 
           <div className="hero-content">
             <span className="badge"><Layers size={11} /> Enterprise Business Architecture</span>
-            <h1 className="hero-title" style={{ fontSize: "44px", fontWeight: 900, lineHeight: 1.15, letterSpacing: "-1px" }}>
+            <h1 className="hero-title">
               Nepal's premier network for <span style={{ color: "#ff6b00" }}>verified</span> local workforce.
             </h1>
-            <p className="hero-p" style={{ fontSize: "15px", color: "#888", lineHeight: 1.65, marginTop: "16px" }}>
+            <p className="hero-p">
               Connecting homes, offices, and construction sites with skilled professionals instantly. 
               Your trusted on-demand ecosystem for smarter, hassle-free local labor hire across Nepal.
             </p>
@@ -117,7 +143,7 @@ export default function RegisterPage() {
           <div className="footer-text">Clean Architecture Compliance © 2026</div>
         </section>
 
-        {/* ── दायाँ भाग: विलासी लक्जरी फारम (Form Block) ── */}
+        {/* Form Panel */}
         <section className="right-panel">
           <div className="form-wrapper">
             {!success ? (
@@ -148,16 +174,38 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleSubmit} className="actual-form">
                   {userType === "worker" && (
-                    <div className="input-group">
+                    <div className="input-group" ref={dropdownRef}>
                       <label>Professional Trade</label>
-                      <select value={skill} onChange={(e) => setSkill(e.target.value)} className="luxury-input cursor-pointer">
-                        <option value="" disabled>-- Select Your Skill --</option>
-                        <option value="painter">Painter (पेन्टर)</option>
-                        <option value="electrician">Electrician (इलेक्ट्रिसियन)</option>
-                        <option value="plumber">Plumber (प्लम्बर)</option>
-                        <option value="carpenter">Carpenter (कार्पेन्टर)</option>
-                        <option value="construction">Construction Worker (मजदुर)</option>
-                      </select>
+                      <div className="custom-dropdown-container">
+                        <div 
+                          className="luxury-input custom-dropdown-trigger" 
+                          onClick={() => setIsOpen(!isOpen)}
+                        >
+                          <span>
+                            {skill 
+                              ? skillsList.find(s => s.value === skill)?.label 
+                              : "-- Select Your Skill --"}
+                          </span>
+                          <ChevronDown size={16} className={`arrow-icon ${isOpen ? 'rotate' : ''}`} />
+                        </div>
+                        
+                        {isOpen && (
+                          <div className="custom-dropdown-menu">
+                            {skillsList.map((s) => (
+                              <div
+                                key={s.value}
+                                className={`custom-dropdown-item ${skill === s.value ? 'selected' : ''}`}
+                                onClick={() => {
+                                  setSkill(s.value);
+                                  setIsOpen(false);
+                                }}
+                              >
+                                {s.label}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -232,7 +280,6 @@ export default function RegisterPage() {
                   <span className="line"></span>
                 </div>
 
-                {/* आधिकारिक सोसल बटनहरू */}
                 <div className="social-grid">
                   <button type="button" onClick={() => alert("Google Auth Linked")} className="social-btn btn-google">
                     <svg className="social-svg" viewBox="0 0 24 24">
@@ -288,8 +335,8 @@ export default function RegisterPage() {
         .brand-sub { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
         .hero-content { max-width: 460px; margin: auto 0; }
         .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; }
-        .hero-title { font-size: 46px; font-weight: 900; line-height: 1.1; margin: 24px 0 16px 0; letter-spacing: -1px; }
-        .hero-p { color: #888; font-size: 15px; line-height: 1.6; }
+        .hero-title { font-size: 44px; font-weight: 900; line-height: 1.15; margin: 24px 0 16px 0; letter-spacing: -1px; }
+        .hero-p { color: #888; font-size: 15px; line-height: 1.65; margin-top: 16px; }
         .footer-text { font-size: 11px; color: #444; font-family: monospace; }
         .right-panel { display: flex; align-items: center; justify-content: center; padding: 40px; background: #03050a; }
         .form-wrapper { width: 100%; max-width: 370px; }
@@ -299,7 +346,7 @@ export default function RegisterPage() {
         .tab-btn { flex: 1; border: 0; outline: none; background: transparent; color: #666; height: 38px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
         .tab-btn:hover { color: #fff; }
         .active-customer { background: #2563eb !important; color: #fff !important; box-shadow: 0 4px 15px rgba(37,99,235,0.2); }
-        .active-worker { background: #ff5500 !important; color: #fff !important; box-shadow: 0 4px 15px rgba(255,85,0,0.2); }
+        .active-worker { background: #e65100 !important; color: #fff !important; box-shadow: 0 4px 15px rgba(230,81,0,0.3); }
         .actual-form { display: flex; flex-direction: column; gap: 16px; }
         .name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .input-group { display: flex; flex-direction: column; gap: 6px; }
@@ -312,15 +359,25 @@ export default function RegisterPage() {
           appearance: none !important; -webkit-appearance: none !important;
         }
         .luxury-input:focus { border-color: rgba(59,130,246,0.4) !important; background: rgba(255,255,255,0.04) !important; }
-        select.luxury-input { background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") !important; background-repeat: no-repeat !important; background-position: right 14px center !important; }
-        .checkbox-group { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; }
-        .luxury-checkbox { margin-top: 2px; width: 14px; height: 14px; accent-color: #2563eb; cursor: pointer; }
-        .checkbox-group label { font-size: 12px; color: #666; font-weight: 500; line-height: 1.4; cursor: pointer; }
-        .highlight-text { color: #888; font-weight: 700; text-decoration: underline; }
-        .field-err { font-size: 11px; color: #f87171; font-weight: 600; text-align: left; }
+        .custom-dropdown-container { position: relative; width: 100%; }
+        .custom-dropdown-trigger { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+        .arrow-icon { color: #555; transition: transform 0.2s ease; }
+        .arrow-icon.rotate { transform: rotate(180deg); }
+        .custom-dropdown-menu {
+          position: absolute; top: calc(100% + 6px); left: 0; width: 100%;
+          background: #090d16; border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 12px; z-index: 50; overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 4px;
+        }
+        .custom-dropdown-item {
+          padding: 10px 14px; font-size: 13px; color: rgba(255,255,255,0.7);
+          cursor: pointer; border-radius: 8px; transition: all 0.15s ease;
+        }
+        .custom-dropdown-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+        .custom-dropdown-item.selected { background: #e65100; color: #fff; font-weight: 700; }
         .submit-btn { width: 100%; height: 44px; border: 0; outline: none; border-radius: 10px; color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; transition: all 0.2s; }
         .btn-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 4px 20px rgba(37,99,235,0.15); }
-        .btn-orange { background: linear-gradient(135deg, #ff5500, #dd3c00); box-shadow: 0 4px 20px rgba(255,85,0,0.15); }
+        .btn-orange { background: linear-gradient(135deg, #e65100, #bf360c); box-shadow: 0 4px 20px rgba(230,81,0,0.15); }
         .submit-btn:active { transform: scale(0.99); }
         .divider-zone { display: flex; align-items: center; gap: 10px; margin: 24px 0; }
         .line { flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
@@ -334,6 +391,11 @@ export default function RegisterPage() {
         .btn-apple { background: #000000 !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.15) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         .btn-apple:hover { background: #111111 !important; }
         .social-svg { width: 15px; height: 15px; }
+        .checkbox-group { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; }
+        .luxury-checkbox { margin-top: 2px; width: 14px; height: 14px; accent-color: #2563eb; cursor: pointer; }
+        .checkbox-group label { font-size: 12px; color: #666; font-weight: 500; line-height: 1.4; cursor: pointer; }
+        .highlight-text { color: #888; font-weight: 700; text-decoration: underline; }
+        .field-err { font-size: 11px; color: #f87171; font-weight: 600; text-align: left; }
         .footer-redirect { text-align: center; font-size: 13px; color: #555; margin-top: 28px; }
         .login-link { color: #2563eb; text-decoration: none; font-weight: 700; }
         .error-alert { padding: 12px; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15); color: #f87171; border-radius: 10px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
