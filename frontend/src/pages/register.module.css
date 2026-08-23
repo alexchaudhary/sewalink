@@ -1,0 +1,286 @@
+/* ==========================================================================
+   SEWALINK ULTRA PREMIUM CORPORATE CSS MODULE RULES (FIXED ROW LAYOUT)
+   ========================================================================== */
+
+.mainContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #040508;
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  min-height: 100vh;
+}
+
+@media (min-width: 1024px) {
+  .gridContainer {
+    grid-template-columns: 42% 58%;
+  }
+}
+
+.leftPanel {
+  background: radial-gradient(circle at 0% 0%, rgba(255,255,255,0.01) 0%, transparent 80%), 
+              linear-gradient(135deg, #070913 0%, #020306 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 4.5rem 3.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.rightPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2.5rem;
+  background-color: #040508;
+}
+
+.formWrapper {
+  width: 100%;
+  max-width: 440px;
+}
+
+.headerBlock h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #ffffff;
+}
+
+.headerBlock p {
+  color: #525866;
+  font-size: 0.9rem;
+  margin-top: 0.4rem;
+}
+
+.tabContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: #0a0d16;
+  padding: 0.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  margin: 2.25rem 0;
+}
+
+.tabBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  color: #525866;
+  border-radius: 10px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.activeCustomer {
+  background-color: #121829;
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.activeWorker {
+  background-color: #1c1310;
+  color: #ff6b00;
+  border: 1px solid rgba(255, 107, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.actualForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label {
+  font-size: 0.725rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.luxuryInput {
+  background-color: #090b11;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  outline: none;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.luxuryInput:focus {
+  border-color: var(--accent-identity-color);
+  background-color: #0d111a;
+  box-shadow: 0 0 0 3px var(--accent-glow-alpha);
+}
+
+.nameRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.inputIconWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 1.1rem;
+  color: #4b5563;
+  opacity: 0.7;
+}
+
+.luxuryInput.withIcon {
+  padding-left: 2.85rem;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 1.1rem;
+  background: transparent;
+  border: none;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.customDropdownContainer { position: relative; }
+.customDropdownTrigger { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+
+.dynamicDropdownFloat {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  background-color: #0a0d16;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  z-index: 999 !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.customDropdownItem {
+  padding: 0.85rem 1.1rem;
+  font-size: 0.925rem;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.customDropdownItem:hover {
+  background-color: #141929;
+  color: var(--accent-identity-color);
+}
+
+.termsRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.termsRow label { font-size: 0.85rem; color: #6b7280; line-height: 1.5; }
+.luxuryCheckbox { accent-color: var(--accent-identity-color); cursor: pointer; width: 14px; height: 14px; margin-top: 0.15rem; }
+
+/* ── SOCIAL ROW GRID FIX: FORCES BUTTONS HORIZONTALLY SIDE-BY-SIDE ── */
+.socialDivider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: #374151;
+  font-size: 0.725rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.socialDivider::before, .socialDivider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.socialDivider span { padding: 0 1rem; }
+
+.socialGridRow { 
+  display: grid !important; 
+  grid-template-columns: repeat(3, 1fr) !important; /* Forces 3 columns side-by-side */
+  gap: 0.75rem !important; 
+  width: 100% !important;
+}
+
+.socialBtn {
+  background-color: #090b11 !important;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  color: #ffffff !important;
+  padding: 0.75rem 0.25rem !important;
+  border-radius: 12px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  width: 100% !important;
+}
+
+.socialBtn:hover {
+  background-color: #111420 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+.brandIconSvg {
+  flex-shrink: 0 !important;
+}
+
+/* 🔵 Facebook Corporate Premium Colors Override */
+.facebookOfficial {
+  background-color: rgba(24, 119, 242, 0.05) !important;
+  border-color: rgba(24, 119, 242, 0.15) !important;
+  color: #1877f2 !important;
+}
+.facebookOfficial:hover {
+  background-color: rgba(24, 119, 242, 0.12) !important;
+  border-color: rgba(24, 119, 242, 0.3) !important;
+}
+
+/* ⚫ Apple Premium Monochrome Identity Colors */
+.appleOfficial {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+.appleOfficial:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.fieldErr { color: #ef4444; font-size: 0.75rem; margin-top: 0.35rem; }
+.loginPrompt { text-align: center; font-size: 0.9rem; color: #525866; margin-top: 1.5rem; }
+.loginLink { color: var(--accent-identity-color); font-weight: 600; text-decoration: none; }
+.loginLink:hover { text-decoration: underline; }

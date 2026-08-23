@@ -12,7 +12,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
  */
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, phone, password, firstName, lastName, role } = req.body;
+    // १. फ्रन्टइन्डबाट आएको 'skill' लाई पनि यहाँ थापेको
+    const { email, phone, password, firstName, lastName, role, skill } = req.body;
 
     // Validate required fields
     if (!email || !password || !firstName || !lastName) {
@@ -35,7 +36,10 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     // Hash the plain text password configuration securely
     const hashedPassword = await bcrypt.hash(password, 12);
-    const standardRole = role === "PROVIDER" ? "PROVIDER" : "CUSTOMER";
+
+    const upperRole = role ? role.toUpperCase().trim() : "";
+    const standardRole = upperRole === "PROVIDER" || upperRole === "WORKER" || upperRole === "KAMDAR" ? "PROVIDER" : "CUSTOMER";
+
 
     // Build user records and relational schemas down the database pipeline
     const created = await prisma.user.create({
@@ -46,14 +50,26 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         phone: phone ? phone.trim() : null,
         password: hashedPassword,
         role: standardRole,
+        
+        // २. यदि कामदार दर्ता भएको हो भने उसको प्रोफाइलसँगै 'skills' पनि डाटाबेसमा सेभ गर्ने
         providerProfile:
           standardRole === "PROVIDER"
             ? {
                 create: {
                   displayName: `${firstName.trim()} ${lastName.trim()}`,
-                  headline: "Experienced local service provider",
+                  headline: skill ? `${skill.toUpperCase()} Specialist` : "Experienced local service provider",
                   hourlyRate: 0,
                   rating: 0.0,
+                  // यदि फ्रन्टइन्डबाट सीप पठाइएको छ भने 'ProviderSkill' तालिकामा डाटा हाल्ने
+                  ...(skill && {
+                    skills: {
+                      create: {
+                        name: skill,
+                        experienceYears: 1, // सुरुमा डिफल्ट १ वर्ष
+                        hourlyRate: 0
+                      }
+                    }
+                  })
                 },
               }
             : undefined,
@@ -188,6 +204,7 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
 /**
  * User Session Profile Controller
  * Resolves authentication metrics from middleware tokens for authorized dashboards.
+ * ३. तपाईंको साविकको भाग ३ को कोडलाई यहाँ पूर्ण रूपमा मिलाइएको छ (तपाईंको original logs र responses सहित)
  */
 export const getMe = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -209,6 +226,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
         firstName: true,
         lastName: true,
         createdAt: true,
+        providerProfile: true // कामदारको ड्यासबोर्डका लागि प्रोफाइल पनि तानेको
       },
     });
 

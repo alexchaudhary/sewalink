@@ -1,168 +1,136 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // Next.js App Router को लागि सही आयात
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { fetcher } from "../lib/api";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, Wrench } from "lucide-react";
-
-// ── Shared Static Configurations ─────────────────────────────────────────────
-const SERVICES = [
-  { Icon: Wrench, label: "Plumbing" },
-  { Icon: Wrench, label: "Electrical" },
-  { Icon: Wrench, label: "Repair work" },
-  { Icon: Wrench, label: "Painting" },
-  { Icon: Wrench, label: "Cleaning" },
-];
-
-const ROADMAP = [
-  { title: "Development phase", text: "Core login, registration, and service flows are being built." },
-  { title: "Early access soon", text: "Real users and service partners will be added only after testing." },
-  { title: "Built for local service", text: "The platform is being prepared for organized local service discovery." },
-];
-
-interface Form { email: string; password: string; }
-interface Errs { email?: string; password?: string; server?: string; }
-
-// ── In-App Client Form Validation Handler ────────────────────────────────────
-function validate(form: Form): Errs {
-  const errors: Errs = {};
-  if (!form.email.trim()) errors.email = "Required";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = "Invalid email";
-  if (!form.password) errors.password = "Required";
-  else if (form.password.length < 6) errors.password = "Password too short";
-  return errors;
-}
+import { Mail, Lock, ShieldAlert, Eye, EyeOff, Wrench, User, Briefcase } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState<Form>({ email: "", password: "" });
-  const [errors, setErrors] = useState<Errs>({});
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState<"customer" | "worker">("customer"); 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
-  const set = (key: keyof Form) => (value: string) => {
-    setForm((current) => ({ ...current, [key]: value }));
-    setErrors((current) => ({ ...current, [key]: undefined, server: undefined }));
-  };
-
-  // ── Asynchronous Form Submission Engine ────────────────────────────────────
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (loading || success) return;
-
-    const nextErrors = validate(form);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       setLoading(true);
-      const data = await fetcher("/api/auth/login", {
+      setError("");
+
+      if (!email || !password) {
+        setError("Please enter your account email and password fields.");
+        return;
+      }
+
+      // ब्याकइन्ड (Prisma Database) ले बुझ्ने सही Business Logic रोल मिलाएको
+      const requestBody = {
+        email: email.toLowerCase().trim(),
+        password: password,
+        role: userType === "worker" ? "PROVIDER" : "CUSTOMER", 
+      };
+
+      const response = await fetcher("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email: form.email, password: form.password }),
+        body: JSON.stringify(requestBody),
       });
 
-      if (data && data.token) {
-        window.localStorage.setItem("sewalink_token", data.token);
-        setSuccess(true);
-        const assignedRole = data.user?.role?.toUpperCase();
-        await new Promise((res) => setTimeout(res, 800));
+      // ब्याकइन्ड रेस्पोन्स स्ट्रक्चर अनुसार टोकन तानेको
+      const sessionToken = response.data?.token || response.token;
 
-        // Multi-Tenant Redirection Rules
-        if (assignedRole === "ADMIN") router.push("/admin-dashboard");
-        else if (assignedRole === "PROVIDER") router.push("/provider-dashboard");
-        else router.push("/dashboard");
+      if (!sessionToken) {
+        setError("Authentication handshake failed. Storage token parameters not resolved.");
+        return;
       }
+
+      // टोकन सुरक्षित राखेको
+      window.localStorage.setItem("kamdarnepal_token", sessionToken);
+
+      // ब्याकइन्डबाट आएको वास्तविक युजरको रोल (PROVIDER वा CUSTOMER)
+      const dbUserRole = response.data?.user?.role || response.user?.role;
+
+      // Corporate Level Standard: रोल अनुसार छुट्टाछुट्टै ड्यासबोर्डमा रिडाइरेक्ट गर्ने लजिक
+      if (dbUserRole === "PROVIDER") {
+     router.push("/dashboard/worker"); 
+    } else {
+     router.push("/dashboard/customer"); 
+    }
+
+
     } catch (err: any) {
-      setErrors((curr) => ({ ...curr, server: err?.message || "Invalid credentials sequence." }));
+      setError(err?.message || "Authentication failed. Invalid login credentials sequence.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: "#060810", color: "#fff", fontFamily: "sans-serif" }}>
-      <div style={{ height: 2, background: "linear-gradient(90deg,transparent,#f59e0b,transparent)" }} />
-      <div className="auth-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(360px,0.9fr)", minHeight: "calc(100vh - 2px)" }}>
+    <div style={{ minHeight: "100vh", background: "#060810", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", padding: "20px" }}>
+      <div style={{ width: "100%", maxWidth: "420px", background: "#090d16", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "24px", padding: "40px 32px", boxShadow: "0 20px 50px rgba(0,0,0,0.3)" }}>
         
-        {/* Left Hand Column Panel Viewport */}
-        <section className="auth-left" style={{ padding: 48, background: "linear-gradient(135deg,#0d1117 0%,#111827 100%)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        {/* Kamdar Nepal Brand Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", justifyContent: "center", marginBottom: "32px" }}>
+          <div style={{ background: "linear-gradient(135deg, #1e3a8a, #3b82f6)", padding: "8px", borderRadius: "10px", display: "flex", alignItems: "center" }}>
+            <Wrench size={18} color="#fff" strokeWidth={2.5} />
+          </div>
+          <span style={{ fontSize: "22px", fontWeight: 900, letterSpacing: "-0.03em" }}>Kamdar<span style={{ color: "#f97316" }}>Nepal</span></span>
+        </div>
+
+        <h2 style={{ fontSize: "24px", fontWeight: 800, textAlign: "left", margin: "0 0 8px 0" }}>Welcome back</h2>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", margin: "0 0 24px 0", textAlign: "left" }}>Select account type and enter credentials to sign in.</p>
+
+        {/* Customer vs Kamdar Selection Tabs */}
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", padding: "4px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.06)", marginBottom: "24px" }}>
+          <button type="button" onClick={() => { setUserType("customer"); setError(""); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "40px", background: userType === "customer" ? "#1e3a8a" : "transparent", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
+            <User size={16} />
+            Customer
+          </button>
+          <button type="button" onClick={() => { setUserType("worker"); setError(""); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "40px", background: userType === "worker" ? "#f97316" : "transparent", color: userType === "worker" ? "#111827" : "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
+            <Briefcase size={16} />
+            Kamdar
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ marginBottom: "24px", padding: "14px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "12px", color: "#f87171", fontSize: "13px", display: "flex", alignItems: "center", gap: "10px", textAlign: "left" }}>
+            <ShieldAlert size={16} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px", textAlign: "left" }}>
           <div>
-            <h1 style={{ fontSize: 38, fontWeight: 900, margin: "20px 0" }}>Sign in to your sewalink workspace.</h1>
-            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>Test your local backend synchronization routines securely.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginTop: 24 }}>
-              {SERVICES.map(({ Icon, label }) => (
-                <div key={label} style={{ padding: 12, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, background: "rgba(255,255,255,0.03)", textAlign: "center" }}>
-                  <Icon size={16} color="#f59e0b" style={{ margin: "0 auto 6px" }} />
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{label}</div>
-                </div>
-              ))}
+            <label style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>Email Address</label>
+            <div style={{ position: "relative" }}>
+              <Mail size={16} color="rgba(255,255,255,0.25)" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" style={{ width: "100%", height: "48px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "0 16px 0 48px", color: "#fff", fontSize: "14px", outline: "none", boxSizing: "border-box" }} required />
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24 }}>
-            {ROADMAP.map(({ title, text }) => (
-              <div key={title}>
-                <h4 style={{ fontSize: 13, margin: 0, color: "#f59e0b" }}>✓ {title}</h4>
-                <p style={{ fontSize: 11, margin: "2px 0 0", color: "rgba(255,255,255,0.4)" }}>{text}</p>
-              </div>
-            ))}
-          </div>
-        </section>
 
-        {/* Right Hand Form Interface Column Viewport */}
-        <section className="auth-right" style={{ padding: 48, display: "flex", flexDirection: "column", justifyContent: "center", background: "#060810", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ width: "100%", maxWidth: 340, margin: "0 auto", textAlign: "left" }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Welcome back</h2>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 4 }}>Enter credentials to access account configurations.</p>
-            
-            {errors.server && <div style={{ marginTop: 16, padding: 12, background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, color: "#f87171", fontSize: 12 }}>⚠️ {errors.server}</div>}
-            
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 24 }}>
-              <div>
-                <label style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", fontWeight: 700 }}>Email Address</label>
-                <div style={{ position: "relative", marginTop: 4 }}>
-                  <Mail size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.3)" }} />
-                  <input type="email" placeholder="alex@sewalink.com" value={form.email} onChange={(e) => set("email")(e.target.value)} disabled={loading || success} style={{ width: "100%", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 13, outline: "none", padding: "11px 12px 11px 36px" }} required />
-                </div>
-                {errors.email && <span style={{ color: "#f87171", fontSize: 11 }}>{errors.email}</span>}
-              </div>
-
-              <div>
-                <label style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", fontWeight: 700 }}>Password</label>
-                <div style={{ position: "relative", marginTop: 4 }}>
-                  <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.3)" }} />
-                  <input type={showPassword ? "text" : "password"} placeholder="••••••••" value={form.password} onChange={(e) => set("password")(e.target.value)} disabled={loading || success} style={{ width: "100%", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 13, outline: "none", padding: "11px 36px 11px 36px" }} required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer" }}>
-                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-                {errors.password && <span style={{ color: "#f87171", fontSize: 11 }}>{errors.password}</span>}
-              </div>
-
-              <button type="submit" disabled={loading || success} style={{ marginTop: 8, height: 42, borderRadius: 8, background: success ? "#10b981" : "linear-gradient(135deg,#f59e0b 0%,#ea580c 100%)", border: "none", color: success ? "#fff" : "#111827", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, width: "100%", justifyContent: "center" }}>
-                {loading ? (
-                  "Verifying..."
-                ) : success ? (
-                  <>
-                    <CheckCircle2 size={15} />
-                    Redirecting...
-                  </>
-                ) : (
-                  <>
-                    Sign in to Account
-                    <ArrowRight size={15} />
-                  </>
-                )}
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>Password</label>
+            <div style={{ position: "relative" }}>
+              <Lock size={16} color="rgba(255,255,255,0.25)" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••••" style={{ width: "100%", height: "48px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "0 48px 0 48px", color: "#fff", fontSize: "14px", outline: "none", boxSizing: "border-box" }} required />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer" }}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-            </form>
-            <div style={{ marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.4)", textAlign: "center" }}>
-              Don&apos;t have an account? <Link href="/register" style={{ color: "#f59e0b", textDecoration: "none", fontWeight: 600 }}>Sign up</Link>
             </div>
           </div>
-        </section>
+
+          <button type="submit" disabled={loading} style={{ width: "100%", height: "48px", background: userType === "worker" ? "#f97316" : "#2563eb", color: userType === "worker" ? "#111827" : "#fff", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "all 0.2s", opacity: loading ? 0.7 : 1 }}>
+            {loading ? "Signing in..." : userType === "worker" ? "Sign in as Kamdar →" : "Sign in as Customer →"}
+          </button>
+        </form>
+
+        <div style={{ marginTop: "24px", textAlign: "center", fontSize: "14px", color: "rgba(255,255,255,0.4)" }}>
+          Don't have an account? <Link href="/register" style={{ color: userType === "worker" ? "#f97316" : "#3b82f6", textDecoration: "none", fontWeight: 600 }}>Sign up</Link>
+        </div>
 
       </div>
-    </main>
+    </div>
   );
 }

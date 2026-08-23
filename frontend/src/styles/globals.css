@@ -2,10 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap');
+@import url('https://googleapis.com');
 
-/* ── Reset & base ──────────────────────────────────────────────────────────── */
+/* ── Enterprise Dynamic Color Tokens Matrix ────────────────────────────────── */
+:root {
+  --accent-identity-color: #2563eb; 
+  --accent-identity-hover: #1d4ed8;
+  --accent-glow-alpha: rgba(37, 99, 235, 0.08);
+}
 
+.theme-mode-customer {
+  --accent-identity-color: #2563eb; 
+  --accent-identity-hover: #1d4ed8;
+  --accent-glow-alpha: rgba(37, 99, 235, 0.08);
+}
+
+.theme-mode-worker {
+  --accent-identity-color: #ff6b00; 
+  --accent-identity-hover: #e05e00;
+  --accent-glow-alpha: rgba(255, 107, 0, 0.08);
+}
+
+/* ── Reset & Baseline Configs ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; scrollbar-width: none; }
 *::-webkit-scrollbar  { display: none; }
 
@@ -21,109 +39,28 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-button { transition: all 0.2s ease-out; cursor: pointer; }
-
-/* ── Keyframes ─────────────────────────────────────────────────────────────── */
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(22px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes floatY {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-10px); }
-}
-@keyframes floatChip {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  33%       { transform: translateY(-5px) translateX(2px); }
-  66%       { transform: translateY(3px) translateX(-2px); }
-}
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
-}
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.30; }
-  50%       { opacity: 0.65; }
+/* ── Corporate Structural Visual Utilities ─────────────────────────────── */
+.accent-glow-text {
+  color: var(--accent-identity-color);
+  transition: color 0.25s ease;
 }
 
-/* ── Animation classes ─────────────────────────────────────────────────────── */
-
-.animate-fade-in-up { animation: fadeInUp 0.65s ease-out both; }
-.animate-float      { animation: floatY 4s ease-in-out infinite; }
-.animate-float-chip { animation: floatChip 5s ease-in-out infinite; }
-.animate-shimmer    { background-size: 200% auto; animation: shimmer 3s linear infinite; }
-.animate-glow-pulse { animation: glowPulse 3s ease-in-out infinite; }
-
-.delay-100 { animation-delay: 0.10s; }
-.delay-200 { animation-delay: 0.20s; }
-.delay-300 { animation-delay: 0.30s; }
-.delay-400 { animation-delay: 0.40s; }
-.delay-500 { animation-delay: 0.50s; }
-.delay-600 { animation-delay: 0.60s; }
-
-/* ── Dot grid ──────────────────────────────────────────────────────────────── */
-
-.dot-grid {
-  background-image: radial-gradient(circle, rgba(255,255,255,0.28) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-
-/* ── Glass card ────────────────────────────────────────────────────────────── */
-
-.glass-card {
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  transition: all 0.25s ease;
-}
-.glass-card:hover {
-  border-color: rgba(245,158,11,0.30);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 32px rgba(245,158,11,0.10), 0 20px 60px rgba(0,0,0,0.45);
-}
-
-/* ── Amber button ──────────────────────────────────────────────────────────── */
-
-.btn-amber {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  box-shadow: 0 4px 24px rgba(245,158,11,0.30);
-  border-radius: 12px;
-  transition: all 0.2s ease-out;
-  color: #000;
+.primary-action-trigger {
+  background-color: var(--accent-identity-color) !important;
+  box-shadow: 0 4px 14px var(--accent-glow-alpha);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #ffffff !important;
   font-weight: 700;
 }
-.btn-amber:hover  { filter: brightness(1.10); transform: translateY(-1px); }
-.btn-amber:active { transform: scale(0.97); }
-
-/* ── Ghost button ──────────────────────────────────────────────────────────── */
-
-.btn-ghost {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 12px;
-  color: rgba(255,255,255,0.70);
-  transition: all 0.2s ease-out;
-}
-.btn-ghost:hover {
-  border-color: rgba(255,255,255,0.20);
-  background: rgba(255,255,255,0.04);
-  color: #fff;
+.primary-action-trigger:hover:not(:disabled) {
+  background-color: var(--accent-identity-hover) !important;
+  transform: translateY(-1px);
 }
 
-/* ── Amber glow blob (reusable) ────────────────────────────────────────────── */
-
-.glow-amber {
-  background: radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%);
-  filter: blur(40px);
+.glow-adaptive {
+  background: radial-gradient(circle, var(--accent-glow-alpha) 0%, transparent 70%);
+  filter: blur(50px);
   border-radius: 50%;
   pointer-events: none;
-}
-.glow-indigo {
-  background: radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%);
-  filter: blur(60px);
-  border-radius: 50%;
-  pointer-events: none;
+  transition: background 0.3s ease;
 }
