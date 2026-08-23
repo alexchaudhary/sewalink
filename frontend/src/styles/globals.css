@@ -1,66 +1,86 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
 
-@import url('https://googleapis.com');
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-/* ── Enterprise Dynamic Color Tokens Matrix ────────────────────────────────── */
+  --radius-xl: var(--radius);
+}
+
 :root {
-  --accent-identity-color: #2563eb; 
-  --accent-identity-hover: #1d4ed8;
-  --accent-glow-alpha: rgba(37, 99, 235, 0.08);
+  --background: #040612;
+  --foreground: #f3f4f6;
+  --card: #090d16;
+  --card-foreground: #f3f4f6;
+  --popover: #090d16;
+  --popover-foreground: #f3f4f6;
+  --primary: #f97316;
+  --primary-foreground: #03050a;
+  --secondary: #1e293b;
+  --secondary-foreground: #f3f4f6;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f3f4f6;
+  --destructive: #ef4444;
+  --destructive-foreground: #f3f4f6;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.04);
+  --ring: #f97316;
+  --radius: 1rem;
 }
 
-.theme-mode-customer {
-  --accent-identity-color: #2563eb; 
-  --accent-identity-hover: #1d4ed8;
-  --accent-glow-alpha: rgba(37, 99, 235, 0.08);
-}
-
-.theme-mode-worker {
-  --accent-identity-color: #ff6b00; 
-  --accent-identity-hover: #e05e00;
-  --accent-glow-alpha: rgba(255, 107, 0, 0.08);
-}
-
-/* ── Reset & Baseline Configs ─────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; scrollbar-width: none; }
-*::-webkit-scrollbar  { display: none; }
-
-html { scroll-behavior: smooth; }
-
+html,
 body {
+  padding: 0;
   margin: 0;
-  font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.7;
-  background-color: #060810;
-  color: #d8d8f0;
-  -webkit-font-smoothing: antialiased;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  background-color: #03050a;
+  color: #f3f4f6;
 }
 
-/* ── Corporate Structural Visual Utilities ─────────────────────────────── */
-.accent-glow-text {
-  color: var(--accent-identity-color);
-  transition: color 0.25s ease;
+/* Custom Cyber Utilities */
+@utility bg-cyber-dark {
+  background-color: #03050a;
 }
 
-.primary-action-trigger {
-  background-color: var(--accent-identity-color) !important;
-  box-shadow: 0 4px 14px var(--accent-glow-alpha);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  color: #ffffff !important;
-  font-weight: 700;
-}
-.primary-action-trigger:hover:not(:disabled) {
-  background-color: var(--accent-identity-hover) !important;
-  transform: translateY(-1px);
+@utility border-cyber {
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.glow-adaptive {
-  background: radial-gradient(circle, var(--accent-glow-alpha) 0%, transparent 70%);
-  filter: blur(50px);
-  border-radius: 50%;
-  pointer-events: none;
-  transition: background 0.3s ease;
+@utility bg-card-dark {
+  background-color: rgba(9, 13, 22, 0.5);
+  backdrop-filter: blur(25px);
+}
+
+/* Keyframe Animations */
+@keyframes pulse-glow-amber {
+  0%, 100% { 
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.15); 
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(249, 115, 22, 0.4); 
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow-amber 2s ease-in-out infinite;
 }

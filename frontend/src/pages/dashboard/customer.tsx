@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router"; 
 import { fetcher } from "../../lib/api";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { 
-  Calendar, MapPin, Wrench, LogOut, 
-  Compass, CheckCircle2, ArrowUpRight, ShieldCheck, Inbox
+  Calendar, MapPin, Wrench, LogOut, Compass, ArrowUpRight, ShieldCheck, Inbox, Lock
 } from "lucide-react";
 
 interface Booking {
@@ -27,24 +28,18 @@ export default function UltraCustomerDashboard() {
   const [error, setError] = useState("");
   
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  const [hoverBtn, setHoverBtn] = useState(false);
-  const [hoverLogout, setHoverLogout] = useState(false);
 
-  // Authenticate user session and retrieve active client booking pipelines
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
         setError("");
-        
-        // Check for local authentication bearer token
         const token = window.localStorage.getItem("kamdarnepal_token");
         if (!token) {
           router.push("/login");
           return;
         }
 
-        // Fetch user metadata from auth endpoint
         const authData = await fetcher("/api/auth/me");
         if (authData.user.role === "PROVIDER") {
           router.push("/dashboard/worker");
@@ -52,7 +47,6 @@ export default function UltraCustomerDashboard() {
         }
         setUser(authData.user);
 
-        // Fetch client procurement bookings
         const bookingData = await fetcher("/api/bookings").catch(() => ({ bookings: [] }));
         setBookings(bookingData.bookings || []);
 
@@ -69,168 +63,157 @@ export default function UltraCustomerDashboard() {
     loadDashboardData();
   }, [router]);
 
-  // Handle account logout and session clearing
   const handleLogout = () => {
     window.localStorage.removeItem("kamdarnepal_token");
     router.push("/login");
   };
 
-  // Full-screen loading screen displayed during session verification
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#040612", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", fontFamily: "sans-serif" }}>
-        <div style={{ width: "40px", height: "40px", border: "3px solid rgba(37,99,235,0.1)", borderTop: "3px solid #2563eb", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-        <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", fontWeight: 600, letterSpacing: "0.05em" }}>LOADING SECURED INTERACTION GRID...</span>
-        <style jsx global>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      <div className="min-h-screen bg-[#040612] flex flex-col items-center justify-center gap-4 font-sans select-none">
+        <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+        <span className="text-slate-500 text-xs font-bold tracking-widest uppercase animate-pulse">
+          LOADING SECURED INTERACTION GRID...
+        </span>
       </div>
     );
   }
 
-  // Generate upper-case initials to avoid avatar visual truncation
-  const fInitial = user?.firstName ? user.firstName.charAt(0) : "C";
-  const lInitial = user?.lastName ? user.lastName.charAt(0) : "U";
-  const userInitials = `${fInitial}${lInitial}`.toUpperCase();
+  const userInitials = user ? `${user.firstName ? user.firstName.charAt(0) : ""}${user.lastName ? user.lastName.charAt(0) : ""}`.toUpperCase() : "C";
 
-  // Color mapping helper function based on booking lifecycle status
   const getStatusStyles = (status: Booking["status"]) => {
     switch (status) {
-      case "ACCEPTED": return { text: "#10b981", bg: "rgba(16,185,129,0.06)", border: "rgba(16,185,129,0.15)" };
-      case "COMPLETED": return { text: "#3b82f6", bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.15)" };
-      case "CANCELLED": return { text: "#ef4444", bg: "rgba(239,68,68,0.06)", border: "rgba(239,68,68,0.15)" };
-      default: return { text: "#f59e0b", bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.15)" };
+      case "ACCEPTED": return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      case "COMPLETED": return "text-blue-400 bg-blue-500/10 border-blue-500/20";
+      case "CANCELLED": return "text-red-400 bg-red-500/10 border-red-500/20";
+      default: return "text-amber-400 bg-amber-500/10 border-amber-500/20";
     }
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#040612", color: "#f3f4f6", fontFamily: "sans-serif", paddingBottom: "80px", position: "relative" }}>
+    <div className="min-h-screen bg-[#040612] text-gray-100 font-sans pb-20 relative overflow-x-hidden select-none">
       
-      {/* Background radial gradient decoration */}
-      <div style={{ position: "absolute", top: "-5%", left: "10%", width: "450px", height: "450px", background: "rgba(37,99,235,0.03)", filter: "blur(130px)", borderRadius: "50%", pointerEvents: "none" }} />
+      {/* Premium Background Ambiance Blue Glow */}
+      <div className="absolute top-[-5%] left-[10%] w-[450px] h-[450px] bg-blue-500/5 blur-[130px] rounded-full pointer-events-none" />
 
-      {/* Global Top Navigation Bar */}
-      <nav style={{ height: "80px", background: "rgba(9, 13, 26, 0.7)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 64px", position: "sticky", top: 0, zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", padding: "10px", borderRadius: "14px", display: "flex", alignItems: "center", boxShadow: "0 0 20px rgba(37,99,235,0.2)" }}>
-            <Wrench size={20} color="#fff" strokeWidth={2.5} />
+      {/* Corporate Fixed Navigation Grid */}
+      <nav className="h-20 bg-[#090d1a]/70 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-8 md:px-16 sticky top-0 z-50">
+        <div className="flex items-center gap-3.5 group cursor-pointer" onClick={() => router.push("/dashboard/customer")}>
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2.5 rounded-xl flex items-center shadow-lg shadow-blue-500/10 transition-transform duration-300 group-hover:scale-105">
+            <Wrench size={20} className="text-white" strokeWidth={2.5} />
           </div>
-          <span style={{ fontSize: "24px", fontWeight: 900, letterSpacing: "-0.04em" }}>Kamdar<span style={{ color: "#2563eb" }}>Nepal</span></span>
+          <span className="text-2xl font-black tracking-tight text-white">Kamdar<span className="text-blue-500">Nepal</span></span>
         </div>
         
-        <div style={{ display: "flex", alignItems: "center", gap: "40px" }}>
-          <Link href="/providers" style={{ color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="flex items-center gap-6 md:gap-10">
+          <Link href="/providers" className="text-white/60 hover:text-blue-400 font-semibold text-sm flex items-center gap-2 transition-colors duration-200">
             <Compass size={16} /> Explore Marketplace
           </Link>
-          <button onClick={handleLogout} onMouseEnter={() => setHoverLogout(true)} onMouseLeave={() => setHoverLogout(false)} style={{ background: "none", border: "none", color: hoverLogout ? "#ef4444" : "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px", fontWeight: 700 }}>
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className="text-white/50 hover:text-red-400 font-bold text-sm flex items-center gap-2 px-3 py-2 rounded-xl transition-colors duration-200"
+          >
             <LogOut size={16} /> Logout
-          </button>
+          </Button>
         </div>
       </nav>
 
-      {/* Main Dashboard Layout Container */}
-      <main style={{ padding: "48px 64px", maxWidth: "1440px", margin: "0 auto" }}>
+      {/* Main Framework Dashboard Workspace Area */}
+      <main className="max-w-7xl mx-auto px-6 md:px-16 pt-12">
         
-        {/* Account Summary Banner */}
-        <div style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.01) 0%, rgba(255,255,255,0.005) 100%)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "24px", marginBottom: "40px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-            <div style={{ width: "64px", height: "64px", background: "linear-gradient(135deg, #2563eb, #1d4ed8)", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: 900, color: "#fff", boxShadow: "0 8px 24px rgba(37,99,235,0.15)", flexShrink: 0 }}>
+        {/* Profile Card Banner Widget Block Layer */}
+        <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/5 rounded-3xl p-8 flex items-center justify-between flex-wrap gap-6 mb-10 shadow-2xl shadow-black/40 backdrop-blur-xl">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-xl shadow-blue-500/10 shrink-0">
               {userInitials}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "14px", fontWeight: 800, color: "#2563eb", letterSpacing: "0.05em" }}>KAMDAR NEPAL</span>
-                <div style={{ height: "4px", width: "4px", background: "rgba(255,255,255,0.2)", borderRadius: "50%" }} />
-                <h1 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: "#fff" }}>
-                  {user ? `${user.firstName} ${user.lastName || ""}` : "Client Platform User"}
+            <div className="flex flex-col gap-1.5 text-left">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-extrabold text-blue-500 tracking-widest uppercase">KAMDAR NEPAL</span>
+                <div className="w-1 h-1 bg-white/20 rounded-full" />
+                <h1 className="text-2xl font-extrabold tracking-tight text-white">
+                  Welcome back, {user ? `${user.firstName} ${user.lastName || ""}` : "Client Platform User"}
                 </h1>
-                <div style={{ background: "rgba(37,99,235,0.06)", border: "1px solid rgba(37,99,235,0.2)", borderRadius: "30px", padding: "2px 10px", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <ShieldCheck size={11} color="#3b82f6" />
-                  <span style={{ fontSize: "10px", color: "#3b82f6", fontWeight: 800 }}>SECURED CLIENT GATEWAY</span>
+                <div className="bg-blue-500/5 border border-blue-500/10 rounded-full px-2.5 py-0.5 flex items-center gap-1.5">
+                  <ShieldCheck size={12} className="text-blue-400" />
+                  <span className="text-[10px] text-blue-400 font-extrabold tracking-wider">SECURED CLIENT GATEWAY</span>
                 </div>
               </div>
-              <p style={{ margin: 0, color: "rgba(255,255,255,0.35)", fontSize: "13px", lineHeight: "1.4" }}>
+              <p className="text-white/35 text-sm font-medium">
                 Authorized Node Cluster Endpoint • Account ID: {user?.id || "resolving_identity"}
               </p>
             </div>
           </div>
 
-          <button 
+          {/* Premium Blue CTA Button */}
+          <Button 
             onClick={() => router.push("/providers")}
-            onMouseEnter={() => setHoverBtn(true)}
-            onMouseLeave={() => setHoverBtn(false)}
-            style={{ background: "#2563eb", color: "#fff", border: "none", fontWeight: 700, padding: "16px 32px", borderRadius: "14px", fontSize: "14px", display: "flex", alignItems: "center", gap: "10px", boxShadow: hoverBtn ? "0 12px 24px rgba(37,99,235,0.25)" : "none", cursor: "pointer", transform: hoverBtn ? "translateY(-2px)" : "translateY(0)", transition: "all 0.2s" }}
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold h-12 px-7 rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-blue-600/10 active:scale-95 transition-all duration-200"
           >
-            Find & Hire Labor Resource <ArrowUpRight size={16} />
-          </button>
+            Find & Hire Labor Resource <ArrowUpRight size={16} strokeWidth={2.5} />
+          </Button>
         </div>
 
-        <h2 style={{ fontSize: "20px", fontWeight:800, marginBottom: "24px", letterSpacing: "-0.02em" }}>Active Service Procurement Pipelines</h2>
+        {/* Procurement Pipeline Section Header */}
+        <h2 className="text-xl font-extrabold tracking-tight text-white mb-7 text-left">Active Service Procurement Pipelines</h2>
         
-        {/* Render error banner if network request fails */}
-        {error && (
-          <div style={{ padding: "16px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "12px", color: "#ef4444", marginBottom: "24px" }}>
-            {error}
-          </div>
-        )}
-
-        {/* Conditional rendering for zero bookings vs mapped booking cards */}
         {bookings.length === 0 ? (
-          /* High Fidelity 100% English Corporate Empty State Architecture */
-          <div style={{ border: "1px dashed rgba(255,255,255,0.06)", padding: "64px 32px", borderRadius: "24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", background: "rgba(255,255,255,0.005)" }}>
-            <div style={{ background: "rgba(255,255,255,0.01)", padding: "16px", borderRadius: "50%" }}>
-              <Inbox size={24} color="rgba(255,255,255,0.15)" />
+          /* High Fidelity 100% English Corporate Empty State Architecture Layout Window */
+          <div className="border border-dashed border-white/10 p-16 py-20 rounded-3xl text-center flex flex-col items-center justify-center gap-4 bg-white/[0.005]">
+            <div className="bg-white/5 p-4 rounded-full border border-white/10">
+              <Inbox size={24} className="text-white/40" />
             </div>
-            <div>
-              <h4 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>No Active Procurement Pipelines</h4>
-              <p style={{ margin: "8px 0 0 0", fontSize: "14px", color: "rgba(255,255,255,0.4)", maxWidth: "440px", lineHeight: "1.6" }}>
+            <div className="flex flex-col gap-2">
+              <h4 className="text-lg font-bold text-white tracking-tight">No Active Procurement Pipelines</h4>
+              <p className="text-sm text-white/40 max-w-md mx-auto leading-relaxed">
                 You have not booked any service professionals yet. Click on the "Find & Hire Labor Resource" button above to browse and hire verified experts instantly from the live marketplace network.
               </p>
             </div>
           </div>
         ) : (
-          /* Grid mapping active service procurement requests */
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "28px" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
             {bookings.map((b) => {
               const isHovered = hoveredCard === b.id;
-              const sStyle = getStatusStyles(b.status);
               return (
-                <div
+                <div 
                   key={b.id}
                   onMouseEnter={() => setHoveredCard(b.id)}
                   onMouseLeave={() => setHoveredCard(null)}
-                  style={{ 
-                    background: "rgba(9, 13, 26, 0.4)", 
-                    border: isHovered ? "1px solid rgba(37,99,235,0.3)" : "1px solid rgba(255,255,255,0.05)", 
-                    padding: "28px", 
-                    borderRadius: "24px", 
-                    transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)", 
-                    transform: isHovered ? "translateY(-4px)" : "translateY(0)" 
-                  }}
+                  className={cn(
+                    "bg-[#090d1a]/40 border rounded-3xl p-7 relative transition-all duration-300 ease-out flex flex-col justify-between gap-4",
+                    isHovered ? "border-blue-500/30 -translate-y-1 shadow-2xl shadow-black/50" : "border-white/5"
+                  )}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: "19px", fontWeight: 800 }}>{b.providerName}</h3>
-                      <span style={{ fontSize: "12px", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", display: "block", marginTop: "4px" }}>
-                        {b.profession}
+                  <div>
+                    <div className="flex justify-between items-start mb-5 gap-4">
+                      <div>
+                        <h3 className="text-lg font-extrabold text-white tracking-tight">{b.providerName}</h3>
+                        <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block mt-1">{b.profession}</span>
+                      </div>
+                      <span className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-black border tracking-wider",
+                        getStatusStyles(b.status)
+                      )}>
+                        {b.status}
                       </span>
                     </div>
-                    <span style={{ color: sStyle.text, background: sStyle.bg, border: `1px solid ${sStyle.border}`, padding: "6px 14px", borderRadius: "30px", fontSize: "11px", fontWeight: 800 }}>
-                      {b.status}
-                    </span>
+
+                    <div className="flex flex-col gap-2.5 text-sm text-white/45 font-medium">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-white/30" /> <span>{b.date}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin size={14} className="text-white/30" /> <span>{b.city}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "14px", color: "rgba(255,255,255,0.45)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Calendar size={14} /> {b.date}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <MapPin size={14} /> {b.city}
-                    </div>
-                    <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff", marginTop: "6px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span>Rs. {b.budget}</span>
-                      <span style={{ fontSize: "12px", color: "#10b981", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
-                        <CheckCircle2 size={13} /> Secured Escrow
-                      </span>
-                    </div>
+                  <div className="text-base font-black text-white pt-4 border-t border-white/5 flex items-center justify-between">
+                    <span>Rs. {b.budget}</span>
+                    <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                      <Lock size={12} /> Secured Escrow
+                    </span>
                   </div>
                 </div>
               );

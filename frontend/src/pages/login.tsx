@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Next.js App Router को लागि सही आयात
+import { useRouter } from "next/router"; 
 import Link from "next/link";
 import { fetcher } from "../lib/api";
+import { Button } from "@/components/ui/button";
 import { Mail, Lock, ShieldAlert, Eye, EyeOff, Wrench, User, Briefcase } from "lucide-react";
 
 export default function LoginPage() {
@@ -26,7 +27,6 @@ export default function LoginPage() {
         return;
       }
 
-      // ब्याकइन्ड (Prisma Database) ले बुझ्ने सही Business Logic रोल मिलाएको
       const requestBody = {
         email: email.toLowerCase().trim(),
         password: password,
@@ -38,7 +38,6 @@ export default function LoginPage() {
         body: JSON.stringify(requestBody),
       });
 
-      // ब्याकइन्ड रेस्पोन्स स्ट्रक्चर अनुसार टोकन तानेको
       const sessionToken = response.data?.token || response.token;
 
       if (!sessionToken) {
@@ -46,19 +45,15 @@ export default function LoginPage() {
         return;
       }
 
-      // टोकन सुरक्षित राखेको
       window.localStorage.setItem("kamdarnepal_token", sessionToken);
 
-      // ब्याकइन्डबाट आएको वास्तविक युजरको रोल (PROVIDER वा CUSTOMER)
       const dbUserRole = response.data?.user?.role || response.user?.role;
 
-      // Corporate Level Standard: रोल अनुसार छुट्टाछुट्टै ड्यासबोर्डमा रिडाइरेक्ट गर्ने लजिक
       if (dbUserRole === "PROVIDER") {
-     router.push("/dashboard/worker"); 
-    } else {
-     router.push("/dashboard/customer"); 
-    }
-
+        router.push("/dashboard/worker"); 
+      } else {
+        router.push("/dashboard/customer"); 
+      }
 
     } catch (err: any) {
       setError(err?.message || "Authentication failed. Invalid login credentials sequence.");
@@ -68,66 +63,112 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060810", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif", padding: "20px" }}>
-      <div style={{ width: "100%", maxWidth: "420px", background: "#090d16", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "24px", padding: "40px 32px", boxShadow: "0 20px 50px rgba(0,0,0,0.3)" }}>
+    <div className="min-h-screen bg-[#060810] text-white flex items-center justify-center font-sans p-5 select-none">
+      
+      {/* Background Lighting Accent */}
+      <div className="absolute top-[-5%] left-[10%] w-[400px] h-[400px] bg-blue-500/2 blur-[130px] rounded-full pointer-events-none" />
+
+      <div className="w-full max-w-[420px] bg-[#090d16] border border-white/5 rounded-[24px] px-8 py-10 shadow-2xl shadow-black/50 text-left">
         
         {/* Kamdar Nepal Brand Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", justifyContent: "center", marginBottom: "32px" }}>
-          <div style={{ background: "linear-gradient(135deg, #1e3a8a, #3b82f6)", padding: "8px", borderRadius: "10px", display: "flex", alignItems: "center" }}>
-            <Wrench size={18} color="#fff" strokeWidth={2.5} />
+        <div className="flex items-center gap-2.5 justify-center mb-8">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-xl flex items-center shadow-lg shadow-blue-500/10">
+            <Wrench size={18} className="text-white" strokeWidth={2.5} />
           </div>
-          <span style={{ fontSize: "22px", fontWeight: 900, letterSpacing: "-0.03em" }}>Kamdar<span style={{ color: "#f97316" }}>Nepal</span></span>
+          <span className="text-2xl font-black tracking-tight">Kamdar<span className="text-orange-500">Nepal</span></span>
         </div>
 
-        <h2 style={{ fontSize: "24px", fontWeight: 800, textAlign: "left", margin: "0 0 8px 0" }}>Welcome back</h2>
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", margin: "0 0 24px 0", textAlign: "left" }}>Select account type and enter credentials to sign in.</p>
+        <h2 className="text-2xl font-extrabold tracking-tight text-white mb-2">Welcome back</h2>
+        <p className="text-white/40 text-sm mb-6">Select account type and enter credentials to sign in.</p>
 
         {/* Customer vs Kamdar Selection Tabs */}
-        <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", padding: "4px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.06)", marginBottom: "24px" }}>
-          <button type="button" onClick={() => { setUserType("customer"); setError(""); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "40px", background: userType === "customer" ? "#1e3a8a" : "transparent", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
-            <User size={16} />
-            Customer
+        <div className="flex bg-white/2 p-1 rounded-xl border border-white/5 mb-6">
+          <button 
+            type="button" 
+            onClick={() => { setUserType("customer"); setError(""); }} 
+            className={`flex-1 flex items-center justify-center gap-2 h-10 border-none rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 ${
+              userType === "customer" ? "bg-blue-600 text-white shadow-md shadow-blue-600/10" : "bg-transparent text-white/60 hover:text-white"
+            }`}
+          >
+            <User size={14} /> Customer
           </button>
-          <button type="button" onClick={() => { setUserType("worker"); setError(""); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "40px", background: userType === "worker" ? "#f97316" : "transparent", color: userType === "worker" ? "#111827" : "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
-            <Briefcase size={16} />
-            Kamdar
+          <button 
+            type="button" 
+            onClick={() => { setUserType("worker"); setError(""); }} 
+            className={`flex-1 flex items-center justify-center gap-2 h-10 border-none rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 ${
+              userType === "worker" ? "bg-orange-500 text-[#03050a] shadow-md shadow-orange-500/10" : "bg-transparent text-white/60 hover:text-white"
+            }`}
+          >
+            <Briefcase size={14} /> Kamdar
           </button>
         </div>
 
         {error && (
-          <div style={{ marginBottom: "24px", padding: "14px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "12px", color: "#f87171", fontSize: "13px", display: "flex", alignItems: "center", gap: "10px", textAlign: "left" }}>
-            <ShieldAlert size={16} style={{ flexShrink: 0 }} />
+          <div className="mb-6 p-3.5 bg-red-500/5 border border-red-500/15 rounded-xl color text-red-400 text-xs font-medium flex items-center gap-2.5">
+            <ShieldAlert size={16} className="shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px", textAlign: "left" }}>
-          <div>
-            <label style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>Email Address</label>
-            <div style={{ position: "relative" }}>
-              <Mail size={16} color="rgba(255,255,255,0.25)" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" style={{ width: "100%", height: "48px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "0 16px 0 48px", color: "#fff", fontSize: "14px", outline: "none", boxSizing: "border-box" }} required />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <label className="text-[11px] font-extrabold text-white/40 uppercase tracking-wider">Email Address</label>
+            <div className="relative">
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
+              <input 
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                placeholder="name@example.com" 
+                className="w-full h-12 bg-white/2 border border-white/6 focus:border-blue-500/40 rounded-xl pl-12 pr-4 text-sm text-white outline-none box-sizing border-box transition-all duration-200" 
+                required 
+              />
             </div>
           </div>
 
-          <div>
-            <label style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>Password</label>
-            <div style={{ position: "relative" }}>
-              <Lock size={16} color="rgba(255,255,255,0.25)" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)" }} />
-              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••••" style={{ width: "100%", height: "48px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "0 48px 0 48px", color: "#fff", fontSize: "14px", outline: "none", boxSizing: "border-box" }} required />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer" }}>
+          <div className="flex flex-col gap-2">
+            <label className="text-[11px] font-extrabold text-white/40 uppercase tracking-wider">Password</label>
+            <div className="relative">
+              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                placeholder="••••••••••••" 
+                className="w-full h-12 bg-white/2 border border-white/6 focus:border-blue-500/40 rounded-xl px-12 text-sm text-white outline-none box-sizing border-box transition-all duration-200" 
+                required 
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)} 
+                className="absolute right-4 top-1/2 -translate-y-1/2 background-none border-none text-white/30 hover:text-white cursor-pointer p-0"
+              >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          <button type="submit" disabled={loading} style={{ width: "100%", height: "48px", background: userType === "worker" ? "#f97316" : "#2563eb", color: userType === "worker" ? "#111827" : "#fff", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "all 0.2s", opacity: loading ? 0.7 : 1 }}>
+          <Button 
+            type="submit" 
+            disabled={loading} 
+            className={`w-full h-12 text-sm font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 border-none select-none disabled:opacity-50 ${
+              userType === "worker" ? "bg-orange-500 hover:bg-orange-600 text-[#03050a]" : "bg-blue-600 hover:bg-blue-500 text-white"
+            }`}
+          >
             {loading ? "Signing in..." : userType === "worker" ? "Sign in as Kamdar →" : "Sign in as Customer →"}
-          </button>
+          </Button>
         </form>
 
-        <div style={{ marginTop: "24px", textAlign: "center", fontSize: "14px", color: "rgba(255,255,255,0.4)" }}>
-          Don't have an account? <Link href="/register" style={{ color: userType === "worker" ? "#f97316" : "#3b82f6", textDecoration: "none", fontWeight: 600 }}>Sign up</Link>
+        <div className="mt-6 text-center text-sm text-white/40 font-medium">
+          Don't have an account?{" "}
+          <Link 
+            href="/register" 
+            className={`text-sm font-bold no-underline transition-colors ${
+              userType === "worker" ? "text-orange-500 hover:text-orange-400" : "text-blue-500 hover:text-blue-400"
+            }`}
+          >
+            Sign up
+          </Link>
         </div>
 
       </div>

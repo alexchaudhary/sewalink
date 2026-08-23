@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
-  ArrowRight,
   CheckCircle2,
   Lock,
   Mail,
@@ -18,7 +18,6 @@ import {
   EyeOff,
   ChevronDown,
 } from "lucide-react";
-import styles from "./register.module.css";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -66,10 +65,6 @@ export default function RegisterPage() {
     setForm({ ...form, [key]: value });
     setErrors({ ...errors, [key]: undefined });
     setApiError("");
-  };
-
-  const handleSocialLogin = (provider: "google" | "facebook" | "apple") => {
-    window.location.href = `http://localhost:4000/api/auth/${provider}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,7 +115,7 @@ export default function RegisterPage() {
           phone: form.phone.trim(),
           password: form.password,
           role: userType === "worker" ? "PROVIDER" : "CUSTOMER",
-          skill: userType === "worker" ? skill.toUpperCase() : undefined, 
+          skill: userType === "worker" ? skill.toUpperCase() : undefined,
         }),
       });
 
@@ -133,6 +128,9 @@ export default function RegisterPage() {
       }
 
       setSuccess(true);
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
     } catch (err: any) {
       setApiError(
         err?.message || "Registration failed backend connection handshake."
@@ -142,384 +140,237 @@ export default function RegisterPage() {
     }
   };
 
-  const dynamicThemeClass =
-    userType === "worker" ? "theme-mode-worker" : "theme-mode-customer";
-  const getButtonText = () =>
-    loading
-      ? "Processing..."
-      : userType === "customer"
-      ? "Create Account"
-      : "Join as Professional";
-  const targetButtonHexColor = userType === "worker" ? "#ff6b00" : "#2563eb";
-
   return (
-    <main className={`${styles.mainContainer} ${dynamicThemeClass}`}>
-      <div className={styles.gridContainer}>
-        {/* Left Side Sidebar Panel Component Layer */}
-        <section className={styles.leftPanel}>
-          <div className="glow-adaptive absolute -top-20 -left-20 w-80 h-80" />
-          <div className="brand-header">
-            <div className="brand-icon">
-              <Wrench size={18} strokeWidth={2.5} />
+    <main className="min-h-screen bg-[#060810] text-white flex items-center justify-center font-sans p-5 select-none relative overflow-hidden">
+      {/* Background Layer Ambiance Ambient Lighting */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[450px] h-[450px] bg-orange-500/5 blur-[130px] rounded-full pointer-events-none" />
+
+      <div className="w-full max-w-[960px] bg-[#090d16] border border-white/10 rounded-[28px] overflow-hidden grid grid-cols-1 md:grid-cols-2 shadow-2xl shadow-black/60">
+        
+        {/* Left Panel - Corporate Branding Information */}
+        <section className="bg-black/20 p-10 flex flex-col justify-between border-r border-white/5 relative">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-xl flex items-center shadow-lg shadow-blue-500/10">
+              <Wrench size={18} className="text-white" strokeWidth={2.5} />
             </div>
-            <div>
-              <div className="brand-name">
-                Kamdar<span className="accent-glow-text">Nepal</span>
-              </div>
-              <div className="brand-sub">Elite Service Platform</div>
-            </div>
+            <span className="text-xl font-black tracking-tight">
+              Kamdar<span className="text-orange-500">Nepal</span>
+            </span>
           </div>
 
-          <div className="hero-content">
-            <span className="badge">
-              <Layers size={11} /> Enterprise Business Architecture
+          <div className="my-auto py-10 text-left">
+            <span className="inline-flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1 text-[10px] font-extrabold tracking-wider text-blue-400 mb-6 uppercase">
+              <Layers size={11} /> Verified Workforce Network
             </span>
-            <h1 className="hero-title">
-              Nepal's premier network for{" "}
-              <span className="accent-glow-text">verified</span> local workforce.
+            <h1 className="text-3xl font-black tracking-tight text-white leading-tight mb-4">
+              Nepal&apos;s premier network for <span className="text-orange-500">verified</span> local workforce.
             </h1>
-            <p className="hero-p">
-              Connecting homes, offices, and construction sites with skilled
-              professionals instantly. Your trusted on-demand ecosystem for
-              smarter, hassle-free local labor hire across Nepal.
+            <p className="text-white/40 text-sm leading-relaxed">
+              Connecting homes, offices, and construction sites with skilled professionals instantly. Your trusted on-demand ecosystem for smarter, hassle-free local labor hire across Nepal.
             </p>
           </div>
 
-          <div className="footer-text">Clean Architecture Compliance © 2026</div>
+          <div className="text-xs text-white/20 font-medium text-left">
+            Clean Architecture Compliance © 2026
+          </div>
         </section>
 
-        {/* Right Side Form Panel Container Element */}
-        <section className={styles.rightPanel}>
-          <div className={styles.formWrapper}>
-            {!success ? (
-              <div className="fade-in">
-                <div className={styles.headerBlock}>
-                  <h2>Create Account</h2>
-                  <p>Access the high-fidelity cloud network.</p>
-                </div>
+        {/* Right Panel - Core Multi-step Registration Form */}
+        <section className="p-10 flex flex-col justify-center text-left">
+          {success ? (
+            <div className="py-12 text-center flex flex-col items-center justify-center gap-4">
+              <div className="bg-emerald-500/10 p-5 rounded-full border border-emerald-500/20 text-emerald-400">
+                <CheckCircle2 size={40} />
+              </div>
+              <h3 className="text-xl font-black text-white tracking-tight">Onboarding Process Initiated</h3>
+              <p className="text-sm text-white/40 max-w-xs">Your credential tokens have been successfully synchronized inside the active Neon Node cluster.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-5">
+              <div>
+                <h2 className="text-2xl font-extrabold tracking-tight text-white mb-1">Create Account</h2>
+                <p className="text-white/40 text-xs">Access the high-fidelity secure service layer.</p>
+              </div>
 
-                {/* Identity Tab Switched Matrix Controls */}
-                <div className={styles.tabContainer}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUserType("customer");
-                      setApiError("");
-                    }}
-                    className={`${styles.tabBtn} ${
-                      userType === "customer" ? styles.activeCustomer : ""
-                    }`}
-                  >
-                    <User size={13} /> Customer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUserType("worker");
-                      setApiError("");
-                    }}
-                    className={`${styles.tabBtn} ${
-                      userType === "worker" ? styles.activeWorker : ""
-                    }`}
-                  >
-                    <Briefcase size={13} /> Kamdar
-                  </button>
-                </div>
+              {/* Identity Selector Tabs */}
+              <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+                <button
+                  type="button"
+                  onClick={() => { setUserType("customer"); setApiError(""); }}
+                  className={`flex-1 flex items-center justify-center gap-2 h-9 border-none rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 ${
+                    userType === "customer" ? "bg-blue-600 text-white shadow-md" : "bg-transparent text-white/50 hover:text-white"
+                  }`}
+                >
+                  <User size={13} /> Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUserType("worker"); setApiError(""); }}
+                  className={`flex-1 flex items-center justify-center gap-2 h-9 border-none rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 ${
+                    userType === "worker" ? "bg-orange-500 text-[#03050a] shadow-md" : "bg-transparent text-white/50 hover:text-white"
+                  }`}
+                >
+                  <Briefcase size={13} /> Kamdar
+                </button>
+              </div>
 
-                {/* HIGH VISIBILITY DYNAMIC ERROR ALERT SIGNAL PANEL */}
-                {apiError && (
-                  <div className="flex items-center gap-3 bg-red-950/40 border border-red-900/50 text-red-200 px-4 py-3.5 rounded-xl text-sm font-medium my-4 animate-fade-in-up">
-                    <ShieldAlert size={18} className="text-red-500 shrink-0" />
-                    <span className="leading-relaxed">{apiError}</span>
+              {apiError && (
+                <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-medium flex items-center gap-2.5">
+                  <ShieldAlert size={16} className="shrink-0" />
+                  <span>{apiError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+                {/* Dynamic Professional Skill Selector Window */}
+                {userType === "worker" && (
+                  <div className="flex flex-col gap-1.5 relative" ref={dropdownRef}>
+                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Professional Trade / Skill</label>
+                    <div 
+                      onClick={() => setIsOpen(!isOpen)}
+                      className="w-full h-11 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between px-4 text-xs text-slate-300 cursor-pointer hover:border-white/20 transition-colors"
+                    >
+                      <span>{skill ? skillsList.find(s => s.value === skill)?.label : "-- कुन काम गर्नुहुन्छ छान्नुहोस् --"}</span>
+                      <ChevronDown size={14} className="text-white/40" />
+                    </div>
+
+                    {isOpen && (
+                      <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-[#0d121f] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl">
+                        {skillsList.map((item) => (
+                          <div
+                            key={item.value}
+                            onClick={() => { setSkill(item.value); setIsOpen(false); setApiError(""); }}
+                            className="px-4 py-3 text-xs text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-colors border-b border-white/5 last:border-none"
+                          >
+                            {item.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} className={styles.actualForm}>
-                  {userType === "worker" && (
-                    <div className={styles.inputGroup} ref={dropdownRef}>
-                      <label>Professional Trade</label>
-                      <div className={styles.customDropdownContainer}>
-                        <div
-                          className={`${styles.luxuryInput} ${styles.customDropdownTrigger}`}
-                          onClick={() => setIsOpen(!isOpen)}
-                        >
-                          <span
-                            className={
-                              skill ? "text-white" : "text-placeholder"
-                            }
-                          >
-                            {skill
-                              ? skillsList.find((s) => s.value === skill)?.label
-                              : "-- Select Your Skill --"}
-                          </span>
-                          <ChevronDown
-                            size={16}
-                            className={`arrow-icon ${isOpen ? "rotate" : ""}`}
-                          />
-                        </div>
-                        {isOpen && (
-                          <div className={styles.dynamicDropdownFloat}>
-                            {skillsList.map((s) => (
-                              <div
-                                key={s.value}
-                                className={styles.customDropdownItem}
-                                onClick={() => {
-                                  setSkill(s.value);
-                                  setIsOpen(false);
-                                }}
-                              >
-                                {s.label}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className={styles.nameRow}>
-                    <div className={styles.inputGroup}>
-                      <label>First Name</label>
-                      <input
-                        type="text"
-                        placeholder="Aarav"
-                        value={form.firstName}
-                        onChange={(e) =>
-                          handleInputChange("firstName", e.target.value)
-                        }
-                        className={styles.luxuryInput}
-                      />
-                      {errors.firstName && (
-                        <span className={styles.fieldErr}>
-                          {errors.firstName}
-                        </span>
-                      )}
-                    </div>
-                    <div className={styles.inputGroup}>
-                      <label>Last Name</label>
-                      <input
-                        type="text"
-                        placeholder="Sharma"
-                        value={form.lastName}
-                        onChange={(e) =>
-                          handleInputChange("lastName", e.target.value)
-                        }
-                        className={styles.luxuryInput}
-                      />
-                      {errors.lastName && (
-                        <span className={styles.fieldErr}>
-                          {errors.lastName}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={styles.inputGroup}>
-                    <label>Email Address</label>
-                    <div className={styles.inputIconWrapper}>
-                      <Mail size={16} className={styles.inputIcon} />
-                      <input
-                        type="email"
-                        placeholder="name@domain.com"
-                        value={form.email}
-                        onChange={(e) =>
-                          handleInputChange("email", e.target.value)
-                        }
-                        className={`${styles.luxuryInput} ${styles.withIcon}`}
-                      />
-                    </div>
-                    {errors.email && (
-                      <span className={styles.fieldErr}>{errors.email}</span>
-                    )}
-                  </div>
-
-                  <div className={styles.inputGroup}>
-                    <label>Phone Number (Nepal)</label>
-                    <div className={styles.inputIconWrapper}>
-                      <Phone size={16} className={styles.inputIcon} />
-                      <input
-                        type="text"
-                        placeholder="98XXXXXXXX"
-                        value={form.phone}
-                        onChange={(e) =>
-                          handleInputChange("phone", e.target.value)
-                        }
-                        className={`${styles.luxuryInput} ${styles.withIcon}`}
-                      />
-                    </div>
-                    {errors.phone && (
-                      <span className={styles.fieldErr}>{errors.phone}</span>
-                    )}
-                  </div>
-
-                  <div className={styles.inputGroup}>
-                    <label>Secure Password</label>
-                    <div className={styles.inputIconWrapper}>
-                      <Lock size={16} className={styles.inputIcon} />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={form.password}
-                        onChange={(e) =>
-                          handleInputChange("password", e.target.value)
-                        }
-                        className={`${styles.luxuryInput} ${styles.withIcon}`}
-                      />
-                      <button
-                        type="button"
-                        className={styles.eyeBtn}
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff size={16} />
-                        ) : (
-                          <Eye size={16} />
-                        )}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <span className={styles.fieldErr}>
-                        {errors.password}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className={styles.termsRow}>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">First Name</label>
                     <input
-                      type="checkbox"
-                      id="terms"
-                      checked={agreeTerms}
-                      onChange={(e) => setAgreeTerms(e.target.checked)}
-                      className={styles.luxuryCheckbox}
+                      type="text"
+                      placeholder="e.g. Ram"
+                      value={form.firstName}
+                      onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl px-4 text-xs text-white outline-none transition-all ${
+                        errors.firstName ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
                     />
-                    <label htmlFor="terms">
-                      I agree to the{" "}
-                      <Link href="/terms" className={styles.loginLink}>
-                        Terms of Service
-                      </Link>{" "}
-                      and{" "}
-                      <Link href="/privacy" className={styles.loginLink}>
-                        Privacy Policy
-                      </Link>
-                      .
-                    </label>
                   </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      backgroundColor: targetButtonHexColor,
-                      color: "#ffffff",
-                    }}
-                    className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xl hover:brightness-110 active:scale-98 transition-all duration-200"
-                  >
-                    <span>{getButtonText()}</span>
-                    <ArrowRight size={16} />
-                  </button>
-                </form>
-
-                {/* Social Auth Divider */}
-                <div className={styles.socialDivider}>
-                  <span>OR REGISTER WITH</span>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Last Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Bahadur"
+                      value={form.lastName}
+                      onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl px-4 text-xs text-white outline-none transition-all ${
+                        errors.lastName ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                  </div>
                 </div>
 
-                <div className={styles.socialGridRow}>
-                  {/* Google */}
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin("google")}
-                    className={styles.socialBtn}
-                  >
-                    <svg
-                      className={styles.brandIconSvg}
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        fill="#EA4335"
-                        d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"
-                      />
-                      <path
-                        fill="#4285F4"
-                        d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12.5s.7 2.8 1.9 5.2l3.7-2.9z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 22.3 12 23z"
-                      />
-                    </svg>
-                    Google
-                  </button>
-
-                  {/* Facebook */}
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin("facebook")}
-                    className={`${styles.socialBtn} ${styles.facebookOfficial}`}
-                  >
-                    <svg
-                      className={styles.brandIconSvg}
-                      width="16"
-                      height="16"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                    </svg>
-                    Facebook
-                  </button>
-
-                  {/* Apple */}
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin("apple")}
-                    className={`${styles.socialBtn} ${styles.appleOfficial}`}
-                  >
-                    <svg
-                      className={styles.brandIconSvg}
-                      width="16"
-                      height="16"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.34c.67-.82 1.12-1.96.99-3.1-.96.04-2.13.64-2.82 1.44-.61.71-1.14 1.87-.99 2.99 1.07.08 2.15-.51 2.82-1.33z" />
-                    </svg>
-                    Apple
-                  </button>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Email Address</label>
+                  <div className="relative">
+                    <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={form.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-4 text-xs text-white outline-none transition-all ${
+                        errors.email ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                  </div>
                 </div>
 
-                <p className={styles.loginPrompt}>
-                  Already have an account?{" "}
-                  <Link href="/login" className={styles.loginLink}>
-                    Sign In
-                  </Link>
-                </p>
-              </div>
-            ) : (
-              <div className="success-card fade-in">
-                <CheckCircle2 size={48} className="success-icon" />
-                <h2>Registration Complete</h2>
-                <p>
-                  Your premium account credentials have been securely provisioned
-                  to our system database.
-                </p>
-                <button
-                  onClick={() => router.push("/login")}
-                  style={{ backgroundColor: targetButtonHexColor }}
-                  className="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 text-white shadow-xl hover:brightness-110 active:scale-98 transition-all duration-200"
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Phone Number (Nepal)</label>
+                  <div className="relative">
+                    <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input
+                      type="text"
+                      placeholder="98XXXXXXXX"
+                      maxLength={10}
+                      value={form.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-4 text-xs text-white outline-none transition-all ${
+                        errors.phone ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Password Context</label>
+                  <div className="relative">
+                    <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Min 8 characters securely hashed"
+                      value={form.password}
+                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-11 text-xs text-white outline-none transition-all ${
+                        errors.password ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-none border-none text-white/30 hover:text-white cursor-pointer p-0"
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 mt-1 cursor-pointer" onClick={() => setAgreeTerms(!agreeTerms)}>
+                  <input
+                    type="checkbox"
+                    checked={agreeTerms}
+                    onChange={() => {}}
+                    className="mt-0.5 h-3.5 w-3.5 rounded border-white/10 bg-slate-950 accent-blue-600 cursor-pointer"
+                  />
+                  <span className="text-[11px] text-white/50 leading-tight">
+                    I explicitly consent and agree to the system Terms of Service and secure Privacy Policy Parameters.
+                  </span>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full h-11 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 border-none select-none disabled:opacity-50 mt-2 ${
+                    userType === "worker"
+                      ? "bg-orange-500 hover:bg-orange-600 text-[#03050a]"
+                      : "bg-blue-600 hover:bg-blue-500 text-white"
+                  }`}
                 >
-                  <span>Proceed to Login Terminal</span>
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            )}
-          </div>
+                  {loading
+                    ? "Processing Pipelines..."
+                    : userType === "worker"
+                    ? "Join as Professional Workforce →"
+                    : "Create Consumer Account →"}
+                </Button>
+
+                <div className="text-center text-xs text-white/40 mt-1">
+                  Already have an identity token?{" "}
+                  <Link href="/login" className="text-blue-400 font-bold hover:underline">
+                    Sign in context
+                  </Link>
+                </div>
+              </form>
+            </div>
+          )}
         </section>
       </div>
     </main>

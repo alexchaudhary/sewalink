@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router"; 
 import { fetcher } from "../lib/api";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
+} from "@/components/ui/dialog";
 import ProviderCard from "../components/ProviderCard";
-import { Search, SlidersHorizontal, Briefcase, DollarSign, X, CheckCircle, Compass, Wrench } from "lucide-react";
+import { Search, SlidersHorizontal, Briefcase, DollarSign, CheckCircle2, Compass, Wrench } from "lucide-react";
 
 interface ProviderSummary {
   id: string;
@@ -15,22 +22,23 @@ interface ProviderSummary {
 }
 
 export default function ProvidersPage() {
+  const router = useRouter();
   const [providers, setProviders] = useState<ProviderSummary[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   
+  // Search & Filter States
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
+  // Booking Modal States (Shadcn Architecture)
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedProvider, setSelectedProvider] = useState<ProviderSummary | null>(null);
   const [jobDescription, setJobDescription] = useState<string>("");
   const [jobBudget, setJobBudget] = useState<number>(1000);
   const [bookingLoading, setBookingLoading] = useState<boolean>(false);
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
-
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const hotCategories = [
     { value: "painter", label: "Painter" },
@@ -109,87 +117,95 @@ export default function ProvidersPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#040612", color: "#f3f4f6", fontFamily: "sans-serif", paddingBottom: "80px", position: "relative" }}>
+    <div className="min-h-screen bg-[#040612] text-slate-100 font-sans pb-20 relative overflow-x-hidden select-none text-left">
       
-      {/* Background Lighting Accents */}
-      <div style={{ position: "absolute", top: "10%", right: "10%", width: "400px", height: "400px", background: "rgba(37,99,235,0.02)", filter: "blur(130px)", borderRadius: "50%", pointerEvents: "none" }} />
+      {/* Background Lighting Accent */}
+      <div className="absolute top-[10%] right-[10%] w-[400px] h-[400px] bg-blue-500/5 blur-[130px] rounded-full pointer-events-none" />
 
       {/* Global Navigation Grid */}
-      <nav style={{ height: "80px", background: "rgba(9, 13, 26, 0.7)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 64px", position: "sticky", top: 0, zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)", padding: "10px", borderRadius: "14px", display: "flex", alignItems: "center" }}>
-            <Wrench size={20} color="#fff" strokeWidth={2.5} />
+      <nav className="h-20 bg-[#090d1a]/70 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-8 md:px-16 sticky top-0 z-50">
+        <div className="flex items-center gap-3.5 group cursor-pointer" onClick={() => router.push("/dashboard/customer")}>
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2.5 rounded-xl flex items-center shadow-lg shadow-blue-500/10 transition-transform duration-300 group-hover:scale-105">
+            <Wrench size={20} className="text-white" strokeWidth={2.5} />
           </div>
-          <span style={{ fontSize: "24px", fontWeight: 900, letterSpacing: "-0.04em" }}>Kamdar<span style={{ color: "#2563eb" }}>Nepal</span></span>
+          <span className="text-2xl font-black tracking-tight text-white">Kamdar<span className="text-blue-500">Nepal</span></span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-          <Link href="/dashboard/customer" style={{ color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: "14px", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="flex items-center gap-8">
+          <Link href="/dashboard/customer" className="text-white/60 hover:text-blue-400 font-semibold text-sm flex items-center gap-2 transition-colors duration-200">
             <Compass size={16} /> Return to Dashboard
           </Link>
         </div>
       </nav>
 
       {/* Header Framework Block */}
-      <header style={{ padding: "48px 64px 24px", maxWidth: "1440px", margin: "0 auto", textAlign: "left" }}>
-        <h1 style={{ fontSize: "36px", fontWeight: 900, margin: 0, letterSpacing: "-0.03em", color: "#fff" }}>Explore Talent Marketplace</h1>
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "15px", marginTop: "8px" }}>Discover and secure contract bookings with verified field personnel across Nepal node clusters.</p>
+      <header className="max-w-7xl mx-auto px-6 md:px-16 pt-12 pb-6">
+        <h1 className="text-4xl font-black tracking-tight text-white">Explore Talent Marketplace</h1>
+        <p className="text-white/40 text-base mt-2">Discover and secure contract bookings with verified field personnel across Nepal node clusters.</p>
       </header>
 
-      <main style={{ padding: "0 64px", maxWidth: "1440px", margin: "0 auto" }}>
+      <main className="max-w-7xl mx-auto px-6 md:px-16">
         
         {/* Category Filter Badges Row Layout */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "40px", alignItems: "center" }}>
-          <span style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.05em", marginRight: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
+        <div className="flex flex-wrap gap-2.5 mb-10 items-center">
+          <span className="text-xs font-extrabold text-white/35 uppercase tracking-wider mr-2 flex items-center gap-1.5">
             <Briefcase size={14} /> Quick Trades:
           </span>
-          <button
+          <Button
+            variant={selectedCategory === "" ? "default" : "outline"}
             onClick={() => setSelectedCategory("")}
-            style={{ padding: "10px 20px", borderRadius: "12px", fontSize: "13px", fontWeight: 700, border: "1px solid rgba(255,255,255,0.05)", background: selectedCategory === "" ? "#2563eb" : "rgba(255,255,255,0.02)", color: "#fff", cursor: "pointer", transition: "all 0.2s" }}
+            className={cn(
+              "h-10 px-5 rounded-xl text-xs font-bold transition-all duration-200",
+              selectedCategory === "" ? "bg-blue-600 hover:bg-blue-500 text-white border-none" : "border-white/5 bg-white/5 text-white/60 hover:text-white"
+            )}
           >
             All Fields
-          </button>
+          </Button>
           {hotCategories.map((cat) => (
-            <button
+            <Button
               key={cat.value}
+              variant={selectedCategory === cat.value ? "default" : "outline"}
               onClick={() => setSelectedCategory(cat.value)}
-              style={{ padding: "10px 20px", borderRadius: "12px", fontSize: "13px", fontWeight: 700, border: "1px solid rgba(255,255,255,0.05)", background: selectedCategory === cat.value ? "#2563eb" : "rgba(255,255,255,0.02)", color: selectedCategory === cat.value ? "#fff" : "rgba(255,255,255,0.6)", cursor: "pointer", transition: "all 0.2s" }}
+              className={cn(
+                "h-10 px-5 rounded-xl text-xs font-bold transition-all duration-200",
+                selectedCategory === cat.value ? "bg-blue-600 hover:bg-blue-500 text-white border-none" : "border-white/5 bg-white/5 text-white/60 hover:text-white"
+              )}
             >
               {cat.label}
-            </button>
+            </Button>
           ))}
         </div>
 
         {/* Outer Split Matrix Grid Panel Layout */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 3fr", gap: "40px", alignItems: "flex-start", textAlign: "left" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 items-start">
           
           {/* Advanced Search Sidebar Parameter Widget */}
-          <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "24px", padding: "28px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", fontSize: "16px", fontWeight: 800, color: "#fff" }}>
-              <SlidersHorizontal size={16} color="#2563eb" /> Search Criteria
+          <div className="bg-white/5 border border-white/5 rounded-3xl p-7 backdrop-blur-xl">
+            <div className="flex items-center gap-2 mb-1.5 text-base font-extrabold text-white">
+              <SlidersHorizontal size={16} className="text-blue-500" /> Search Criteria
             </div>
-            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.35)", lineHeight: "1.5", marginBottom: "28px" }}>Apply parameters to narrow down verified maintenance workforce registries.</p>
+            <p className="text-xs text-white/35 leading-relaxed mb-7">Apply parameters to narrow down verified maintenance workforce registries.</p>
 
-            <form onSubmit={handleSearchSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>Keyword Search</label>
-                <div style={{ position: "relative" }}>
-                  <Search size={14} color="rgba(255,255,255,0.2)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
+            <form onSubmit={handleSearchSubmit} className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-extrabold text-white/40 uppercase tracking-wider">Keyword Search</label>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" />
                   <input
                     type="text"
                     placeholder="e.g. Plumber, Carpentry"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ width: "100%", height: "44px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", padding: "0 14px 0 42px", color: "#fff", fontSize: "13px", outline: "none", boxSizing: "border-box" }}
+                    className="w-full h-11 bg-black/20 border border-white/10 focus:border-blue-500/40 rounded-xl pl-10 pr-4 text-xs text-white outline-none transition-all duration-200"
                   />
                 </div>
               </div>
 
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>Target Location</label>
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-extrabold text-white/40 uppercase tracking-wider">Target Location</label>
                 <select
                   value={selectedCity}
                   onChange={(e) => setSelectedCity(e.target.value)}
-                  style={{ width: "100%", height: "44px", background: "#040612", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", padding: "0 14px", color: "#fff", fontSize: "13px", outline: "none", cursor: "pointer", boxSizing: "border-box" }}
+                  className="w-full h-11 bg-[#040612] border border-white/10 focus:border-blue-500/40 rounded-xl px-3.5 text-xs text-white outline-none cursor-pointer transition-all duration-200"
                 >
                   <option value="">All of Nepal</option>
                   <option value="kathmandu">Kathmandu</option>
@@ -199,145 +215,122 @@ export default function ProvidersPage() {
                 </select>
               </div>
 
-              <button type="submit" style={{ width: "100%", height: "44px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(37,99,235,0.15)" }}>
+              <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/10 active:scale-95 transition-all duration-200">
                 Apply Filter Nodes
-              </button>
+              </Button>
             </form>
           </div>
 
           {/* Core Stream Output Grid View Results */}
-          <div>
+          <div className="lg:col-span-3">
             {error && (
-              <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.15)", padding: "16px", borderRadius: "16px", color: "#f87171", fontSize: "13px", marginBottom: "24px" }}>
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs mb-6">
                 ⚠️ {error}
               </div>
             )}
 
             {loading ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[1, 2, 3, 4].map((s) => (
-                  <div key={s} style={{ height: "160px", background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "24px", padding: "24px" }} />
+                  <div key={s} className="h-48 bg-white/5 border border-white/5 rounded-3xl animate-pulse" />
                 ))}
               </div>
             ) : providers.length === 0 ? (
-              <div style={{ border: "1px dashed rgba(255,255,255,0.06)", padding: "56px 32px", borderRadius: "24px", textAlign: "center", maxWidth: "440px", margin: "40px auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <Search size={24} color="rgba(255,255,255,0.15)" style={{ marginBottom: "16px" }} />
-                <h4 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#fff" }}>No Matching Specialists Found</h4>
-                <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: "rgba(255,255,255,0.45)", lineHeight: "1.5" }}>We could not isolate any verified active provider registries matching those parameters.</p>
+              <div className="border border-dashed border-white/10 p-12 rounded-3xl text-center bg-white/[0.005]">
+                <h3 className="text-base font-bold text-white mb-1">No Matching Specialists Found</h3>
+                <p className="text-xs text-white/40">We could not isolate any verified active provider registries matching those parameters.</p>
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "28px" }}>
-                {providers.map((p) => {
-                  const isHovered = hoveredCard === p.id;
-                  return (
-                    <div
-                      key={p.id}
-                      onMouseEnter={() => setHoveredCard(p.id)}
-                      onMouseLeave={() => setHoveredCard(null)}
-                      style={{ background: "rgba(9, 13, 26, 0.4)", border: isHovered ? "1px solid rgba(37,99,235,0.3)" : "1px solid rgba(255,255,255,0.05)", padding: "28px", borderRadius: "24px", transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)", transform: isHovered ? "translateY(-4px)" : "translateY(0)" }}
-                    >
-                      <ProviderCard
-                        id={p.id}
-                        name={p.displayName}
-                        profession={p.headline || "Service Provider"}
-                        rating={p.rating || 0}
-                        price={p.hourlyRate || 0}
-                        location={p.city || "Nepal"}
-                      />
-                      <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
-                        <button
-                          onClick={() => handleOpenHiringPanel(p)}
-                          style={{ background: isHovered ? "#2563eb" : "transparent", color: isHovered ? "#fff" : "#3b82f6", border: "1px solid #2563eb", padding: "8px 18px", borderRadius: "12px", fontSize: "12px", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}
-                        >
-                          Instant Hire →
-                        </button>
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {providers.map((p) => (
+                  <div key={p.id} className="bg-white/5 border border-white/5 rounded-3xl p-6 relative group flex flex-col justify-between">
+                    <ProviderCard
+                      id={p.id}
+                      name={p.displayName}
+                      profession={p.headline || "Service Provider"}
+                      rating={p.rating || 0}
+                      price={p.hourlyRate || 0}
+                      location={p.city || "Nepal"}
+                    />
+                    <div className="mt-4 flex justify-end pt-3 border-t border-white/5">
+                      <Button
+                        onClick={() => handleOpenHiringPanel(p)}
+                        className="bg-blue-600/20 border border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white px-5 h-9 rounded-xl text-xs font-bold active:scale-95 transition-all duration-200"
+                      >
+                        Instant Hire →
+                      </Button>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
       </main>
 
-      {/* Global Interactive Contract Escrow Overlay Sheets Popup */}
-      {isModalOpen && selectedProvider && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(3,5,10,0.85)", backdropFilter: "blur(12px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <div style={{ background: "#090d16", border: "1px solid rgba(255,255,255,0.06)", width: "100%", maxWidth: "420px", borderRadius: "24px", padding: "32px", position: "relative", textAlign: "left" }}>
-            <button onClick={() => setIsModalOpen(false)} style={{ position: "absolute", top: "24px", right: "24px", background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
-              <X size={18} />
-            </button>
+      {/* Global Interactive Contract Escrow Overlay Popup via Shadcn Dialog */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="bg-[#090d1a] border border-white/10 text-white rounded-3xl p-6 sm:max-w-md">
+          {bookingSuccess ? (
+            <div className="text-center py-8 flex flex-col items-center gap-3">
+              <CheckCircle2 size={48} className="text-emerald-400" />
+              <DialogTitle className="text-xl font-extrabold">Contract Dispatch Successful</DialogTitle>
+              <DialogDescription className="text-xs text-white/40 max-w-xs">
+                The procurement pipeline token was successfully logged and forwarded to the professional's tracking console.
+              </DialogDescription>
+            </div>
+          ) : selectedProvider ? (
+            <form onSubmit={handleConfirmHiring} className="flex flex-col gap-4">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-extrabold text-white">Contract Request Pipeline</DialogTitle>
+                <DialogDescription className="text-xs text-white/40">
+                  Direct engagement request for <span className="text-blue-400 font-bold">{selectedProvider.displayName}</span> ({selectedProvider.headline || "Verified Workforce Node"}).
+                </DialogDescription>
+              </DialogHeader>
 
-            {bookingSuccess ? (
-              <div style={{ padding: "32px 0", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
-                <div style={{ background: "rgba(16,185,129,0.08)", padding: "16px", borderRadius: "50%", border: "1px solid rgba(16,185,129,0.2)" }}>
-                  <CheckCircle size={32} color="#10b981" />
-                </div>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: "#fff" }}>Contract Dispatch Successful</h3>
-                <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.45)", lineHeight: "1.5" }}>The procurement pipeline token was successfully logged and forwarded to the professional's tracking console.</p>
+              <div className="bg-white/5 rounded-2xl p-3 text-xs text-white/60 flex flex-col gap-1 my-1">
+                <div>Location: <span className="text-white font-semibold">{selectedProvider.city || "Nepal"}</span></div>
+                <div>Standard Rate: <span className="text-white font-semibold">Rs. {selectedProvider.hourlyRate || 0}/hr</span></div>
               </div>
-            ) : (
-              <form onSubmit={handleConfirmHiring} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <div>
-                  <span style={{ fontSize: "10px", fontWeight: 800, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "4px" }}>Contract Request Pipeline</span>
-                  <h3 style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: "#fff" }}>{selectedProvider.displayName}</h3>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "rgba(255,255,255,0.4)" }}>{selectedProvider.headline || "Verified Workforce Node"}</p>
-                </div>
 
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", padding: "12px 0", display: "flex", justifyContent: "space-between", fontSize: "13px", color: "rgba(255,255,255,0.5)" }}>
-                  <span>Location: {selectedProvider.city || "Nepal"}</span>
-                  <span style={{ fontWeight: 700, color: "#fff" }}>Rate: Rs. {selectedProvider.hourlyRate || 0}/hr</span>
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-white/40 uppercase">Job Task Summary</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Describe your maintenance or service deployment constraints explicitly..."
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  className="w-full bg-black/30 text-white placeholder-white/20 border border-white/10 rounded-xl p-3 text-xs outline-none resize-none focus:border-blue-500/40 transition-colors"
+                />
+              </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>Job Task Summary</label>
-                  <textarea
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-white/40 uppercase">Offered Contract Budget (Rs.)</label>
+                <div className="relative">
+                  <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                  <input
+                    type="number"
                     required
-                    rows={3}
-                    placeholder="Describe your maintenance or service deployment constraints explicitly..."
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    style={{ width: "100%", background: "rgba(0,0,0,0.3)", color: "#fff", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", padding: "12px 14px", fontSize: "13px", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "sans-serif" }}
+                    min={500}
+                    value={jobBudget}
+                    onChange={(e) => setJobBudget(Number(e.target.value))}
+                    className="w-full h-10 bg-black/30 text-white border border-white/10 rounded-xl pl-8 pr-4 text-xs outline-none focus:border-blue-500/40 transition-colors"
                   />
                 </div>
+              </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "11px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>Offered Contract Budget (Rs.)</label>
-                  <div style={{ position: "relative" }}>
-                    <DollarSign size={14} color="rgba(255,255,255,0.25)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
-                    <input
-                      type="number"
-                      required
-                      min={500}
-                      value={jobBudget}
-                      onChange={(e) => setJobBudget(Number(e.target.value))}
-                      style={{ width: "100%", height: "44px", background: "rgba(0,0,0,0.3)", color: "#fff", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", padding: "0 14px 0 38px", fontSize: "13px", outline: "none", boxSizing: "border-box" }}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={bookingLoading}
-                  style={{ width: "100%", height: "46px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: bookingLoading ? "not-allowed" : "pointer", opacity: bookingLoading ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}
-                >
-                  {bookingLoading ? "Securing Escrow Account..." : "Confirm & Dispatch Booking →"}
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+              <Button
+                type="submit"
+                disabled={bookingLoading}
+                className="w-full h-11 mt-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-all duration-200"
+              >
+                {bookingLoading ? "Securing Escrow Account..." : "Confirm & Dispatch Booking →"}
+              </Button>
+            </form>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-}
-
-// Next.js Link Fallback for safety redirection compliance
-function Link({ href, children, style }: { href: string; children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <a href={href} style={{ textDecoration: "none", ...style }}>
-      {children}
-    </a>
   );
 }
