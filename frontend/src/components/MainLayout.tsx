@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Wrench } from "lucide-react";
 
-interface MainLayoutProps {
+export interface MainLayoutProps {
   children: React.ReactNode;
   title?: string;
 }
@@ -60,11 +60,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <div className="flex items-center space-x-8">
             <Link href="/" className="group focus:outline-none select-none">
               <div className="flex items-center gap-2.5">
-                {/* Wrench Box - Exactly matching your login/register page padding, rounded-xl shape, and shadows */}
                 <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-xl flex items-center shadow-lg shadow-blue-500/10 transition-transform duration-300 group-hover:rotate-12">
                   <Wrench size={18} className="text-white" strokeWidth={2.5} />
                 </div>
-                {/* Typography Brand Weights - Exactly matching your login/register brand metrics */}
                 <span className="text-xl font-black tracking-tight text-white transition-colors duration-200">
                   Kamdar<span className="text-orange-500 transition-colors duration-200 group-hover:text-orange-400">Nepal</span>
                 </span>
@@ -79,9 +77,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`text-xs font-semibold uppercase tracking-wider transition-colors duration-200 hover:text-white ${
-                      /* Swapped text-blue-400 to text-orange-500 to align exactly with the core corporate color palette */
-                      isActive ? 'text-orange-500 font-bold' : 'text-white/40'
+                    className={`text-xs font-black uppercase tracking-widest transition-all duration-300 inline-block drop-shadow-[0_2px_10px_rgba(249,115,22,0.15)] ${
+                      isActive 
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent font-black scale-[1.05]' 
+                        : 'text-slate-400/80 hover:text-white font-semibold'
                     }`}
                   >
                     {link.name}

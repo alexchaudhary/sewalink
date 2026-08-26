@@ -2,9 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { sendSuccess, sendError } from "../utils/apiResponse";
 
-/**
- * Custom type definition mirroring your authenticated user token payload structure.
- */
 interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
@@ -14,80 +11,64 @@ interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Enables authenticated consumers to dispatch structural service requests to target providers.
+ * Creates a new booking linked directly to the valid ProviderProfile model.
  */
 export const createBooking = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const customerId = req.user?.id;
-    
-    // Frontend payload mapping layer: Accepting fields sent from providers.tsx
     const { providerId, providerProfileId, description, budget, date } = req.body;
 
     if (!customerId) {
       return sendError(res, "Authentication required. Missing user identity context.", 401);
     }
 
-    // Resolve structural id context (Supporting both direct providerId and profile relational link)
-    let targetProfileId = providerProfileId || providerId;
+    const targetIdentifier = providerProfileId || providerId;
 
-    // Defensively guard core application criteria requirements
-    if (!targetProfileId || !description || !budget) {
+    if (!targetIdentifier || !description || !budget) {
       return sendError(res, "Missing parameters. Full booking constraints breached.", 400);
     }
 
-    // Dynamic verification layer: Check if it's a raw User ID and resolve its profile
-    let providerExists = await prisma.providerProfile.findUnique({
-      where: { id: targetProfileId },
+    // 1. Resolve exact ProviderProfile instance
+    let providerProfile = await prisma.providerProfile.findFirst({
+      where: {
+        OR: [
+          { id: targetIdentifier },
+          { userId: targetIdentifier }
+        ]
+      }
     });
 
-    if (!providerExists) {
-      // Look up via relational User ID if profile id wasn't matched directly
-      providerExists = await prisma.providerProfile.findUnique({
-        where: { userId: targetProfileId },
-      });
+    if (!providerProfile) {
+      return sendError(res, "Target service professional profile record not found. Cannot create booking.", 404);
     }
 
-    if (!providerExists) {
-      return sendError(res, "Target service professional profile record not found.", 404);
-    }
-        // Create a fresh booking record utilizing strict Prisma relational connect mapping structures matching your exact schema
+    // 2. Connect using the exact ProviderProfile relation expected by Prisma Schema
     const newBooking = await prisma.booking.create({
       data: {
-        customer: {
-          connect: { id: customerId }
-        },
-        // Mapped exactly to 'provider' relation field name from your prisma schema
-        provider: {
-          connect: { id: providerExists.id }
-        },
-        // Senior Prisma Enum Fix: Utilizing the absolute matching 'INSTANT' token from your schema enum
+        customer: { connect: { id: customerId } },
+        provider: { connect: { id: providerProfile.id } },
         type: "INSTANT" as any, 
         status: "PENDING" as any,
         scheduledAt: date ? new Date(date) : new Date(), 
         totalPrice: Number(budget), 
-        location: providerExists.city || "Lalitpur",
-        notes: description.trim() // Mapping job summary safely into the optional notes field context
+        location: providerProfile.city || "Kathmandu",
+        notes: String(description).trim()
       },
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Service request booking dispatched successfully to provider network.",
-      data: { booking: newBooking },
-    });
+    return sendSuccess(res, "Service request booking dispatched successfully to provider network.", { booking: newBooking }, 201);
   } catch (error) {
     return next(error);
   }
 };
 
 /**
- * Senior Production-Grade Booking Status Update Controller
- * Allows providers to update booking states (e.g., CONFIRMED, COMPLETED, REJECTED).
+ * Updates booking status correctly checking provider ownership through ProviderProfile.
  */
 export const updateBookingStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id;
-    const userRole = req.user?.role;
+    const userRole = req.user?.role?.toUpperCase();
     const { id } = req.params;
     const { status } = req.body;
 
@@ -105,16 +86,19 @@ export const updateBookingStatus = async (req: AuthenticatedRequest, res: Respon
 
     const existingBooking = await prisma.booking.findUnique({
       where: { id },
-      include: { providerProfile: true },
+      include: { provider: true },
     });
 
     if (!existingBooking) {
       return sendError(res, "Target service booking log not found.", 404);
     }
 
-    // Strict Role Gating: Enforce business logic rules on who can alter specific statuses
-    if (userRole === "PROVIDER") {
-      if (existingBooking.providerProfile.userId !== userId) {
+    if (userRole === "PROVIDER" || userRole === "WORKER") {
+      const isOwner = 
+        existingBooking.provider?.userId === userId || 
+        existingBooking.provider?.id === userId;
+
+      if (!isOwner) {
         return sendError(res, "Forbidden access. You do not own this service profile thread.", 403);
       }
     } else if (userRole === "CUSTOMER") {
@@ -128,7 +112,7 @@ export const updateBookingStatus = async (req: AuthenticatedRequest, res: Respon
 
     const updatedBooking = await prisma.booking.update({
       where: { id },
-      data: { status: normalizedStatus },
+      data: { status: normalizedStatus as any },
     });
 
     return sendSuccess(res, "Booking track lifecycle status updated successfully.", { booking: updatedBooking });
@@ -138,26 +122,39 @@ export const updateBookingStatus = async (req: AuthenticatedRequest, res: Respon
 };
 
 /**
- * Retrieve All Bookings Associated with the Authenticated User (Context-Aware)
+ * Retrieves User Bookings based on ProviderProfile or Customer ID.
  */
 export const getUserBookings = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id;
-    const userRole = req.user?.role;
+    const userRole = req.user?.role?.toUpperCase(); 
 
     if (!userId || !userRole) {
       return sendError(res, "Authentication required. Missing session tokens.", 401);
     }
 
-    let queryConditions = {};
+    let queryConditions: any = {};
 
-    // Context splitting based on multi-tenant roles
-    if (userRole === "PROVIDER") {
-      const providerProfile = await prisma.providerProfile.findUnique({ where: { userId } });
+    if (userRole === "PROVIDER" || userRole === "WORKER") {
+      const providerProfile = await prisma.providerProfile.findFirst({
+        where: {
+          OR: [
+            { userId },
+            { id: userId }
+          ]
+        }
+      });
+
       if (!providerProfile) {
-        return sendSuccess(res, "No active provider profile established yet.", { bookings: [] });
+        return res.status(200).json({
+          success: true,
+          message: "No provider profile registered for this account.",
+          bookings: [],
+          data: { bookings: [] }
+        });
       }
-      queryConditions = { providerProfileId: providerProfile.id };
+
+      queryConditions = { provider: { id: providerProfile.id } };
     } else {
       queryConditions = { customerId: userId };
     }
@@ -166,32 +163,68 @@ export const getUserBookings = async (req: AuthenticatedRequest, res: Response, 
       where: queryConditions,
       include: {
         customer: {
-          select: { id: true, firstName: true, lastName: true, email: true, phone: true },
-        },
-        providerProfile: {
-          include: {
-            user: { select: { id: true, firstName: true, lastName: true, phone: true } },
+          select: { 
+            id: true, 
+            firstName: true, 
+            lastName: true, 
+            email: true, 
+            phone: true 
           },
         },
+        provider: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                email: true
+              }
+            }
+          }
+        }
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // Remap dataset safely into unified payload structures for high fidelity UI grid cards matching frontend expectation
-    const formattedBookings = bookingsList.map((b: any) => ({
-      id: b.id,
-      providerName: `${b.providerProfile?.user?.firstName || "Expert"} ${b.providerProfile?.user?.lastName || ""}`.trim(),
-      customerName: `${b.customer?.firstName || "Client"} ${b.customer?.lastName || ""}`.trim(),
-      profession: b.title || "Service Specialist",
-      description: b.description,
-      date: new Date(b.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      status: b.status,
-      budget: b.budget,
-      city: b.providerProfile?.city || "Nepal",
-      location: b.description.substring(0, 20) + "..."
-    }));
+    const formattedBookings = bookingsList.map((b: any) => {
+      const notesText = b.notes || "Emergency service request dispatched.";
+      const dateString = b.scheduledAt 
+        ? new Date(b.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) 
+        : "";
 
-    return sendSuccess(res, "User relational booking registers retrieved successfully.", { bookings: formattedBookings });
+      const customerFullName = b.customer 
+        ? `${b.customer.firstName || ""} ${b.customer.lastName || ""}`.trim() || "Client"
+        : "Client";
+
+      const providerUser = b.provider?.user;
+      const providerFullName = providerUser 
+        ? `${providerUser.firstName || ""} ${providerUser.lastName || ""}`.trim() || "Expert"
+        : "Expert";
+
+      return {
+        id: b.id,
+        providerName: providerFullName,
+        customerName: customerFullName,
+        customerPhone: b.customer?.phone || "N/A",
+        customerEmail: b.customer?.email || "N/A",
+        profession: b.type || "INSTANT",
+        description: notesText,
+        date: dateString,
+        status: b.status,
+        budget: b.totalPrice || 500,
+        city: b.provider?.city || b.location || "Kathmandu",
+        location: b.location || notesText
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "User relational booking registers retrieved successfully.",
+      bookings: formattedBookings,
+      data: { bookings: formattedBookings }
+    });
   } catch (error) {
     return next(error);
   }

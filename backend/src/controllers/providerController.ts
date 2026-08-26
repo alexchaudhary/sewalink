@@ -177,16 +177,12 @@ export const updateProviderProfile = async (req: AuthenticatedRequest, res: Resp
       return sendError(res, "Authentication required.", 401);
     }
 
-    const provider = await prisma.providerProfile.findUnique({ where: { userId } });
-    if (!provider) {
-      return sendError(res, "Provider profile record not found.", 404);
-    }
-
     const { displayName, headline, bio, address, city, district, country, hourlyRate } = req.body;
 
-    const updatedProfile = await prisma.providerProfile.update({
-      where: { id: provider.id },
-      data: {
+    // If provider profile exists, it updates; if row is missing, it dynamically creates a new record instantly
+    const updatedProfile = await prisma.providerProfile.upsert({
+      where: { userId },
+      update: {
         displayName,
         headline,
         bio,
@@ -196,10 +192,67 @@ export const updateProviderProfile = async (req: AuthenticatedRequest, res: Resp
         country,
         hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : undefined,
       },
+      create: {
+        userId,
+        displayName: displayName || "Expert Worker",
+        headline: headline || "Verified Specialist",
+        bio: bio || "",
+        address: address || "",
+        city: city || "Kathmandu",
+        district: district || "Nepal",
+        country: country || "Nepal",
+        hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : 150,
+        rating: 4.8 // Default base rating entry seed
+      }
     });
 
     return sendSuccess(res, "Provider profile updated successfully.", { provider: updatedProfile });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
+
+
+/**
+ * Express Media Controller: Dynamically stream buffer arrays onto Cloudinary matrix logs
+ */
+export const uploadProviderAvatar = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendError(res, "Authentication context missing.", 401);
+    }
+
+    if (!req.file) {
+      return sendError(res, "Missing payload parameters. No image file detected.", 400);
+    }
+
+    // Configure your active Cloudinary node footprints instantly
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "kamdarnepal",
+      api_key: process.env.CLOUDINARY_API_KEY || "your_api_key",
+      api_secret: process.env.CLOUDINARY_API_SECRET || "your_api_secret"
+    });
+
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+    
+    const uploadResponse = await cloudinary.uploader.upload(base64Image, {
+      folder: "kamdarnepal_avatars",
+      resource_type: "image"
+    });
+
+    // Directly queries via userId parameter layout matching your unique schema model specs
+    const updatedProfile = await prisma.providerProfile.update({
+      where: { userId },
+      data: { avatarUrl: uploadResponse.secure_url }
+    });
+
+    return sendSuccess(res, "Profile avatar asset uploaded and committed securely!", {
+      avatarUrl: uploadResponse.secure_url,
+      provider: updatedProfile
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
