@@ -50,7 +50,8 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response, ne
     if (!providerExists) {
       return sendError(res, "Target service professional profile record not found.", 404);
     }
-        // Create a fresh booking record utilizing strict Prisma relational connect mapping structures matching your exact schema
+
+    // Create a fresh booking record utilizing strict Prisma relational connect mapping structures matching your exact schema
     const newBooking = await prisma.booking.create({
       data: {
         customer: {
@@ -81,8 +82,7 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response, ne
 };
 
 /**
- * Senior Production-Grade Booking Status Update Controller
- * Allows providers to update booking states (e.g., CONFIRMED, COMPLETED, REJECTED).
+ * Mutates lifecycle states for specified service booking nodes (Accept / Reject Pipeline).
  */
 export const updateBookingStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -138,7 +138,7 @@ export const updateBookingStatus = async (req: AuthenticatedRequest, res: Respon
 };
 
 /**
- * Retrieve All Bookings Associated with the Authenticated User (Context-Aware)
+ * Retrieve All Bookings Associated with the Authenticated User (Context-Aware Multi-Tenant Query Hub)
  */
 export const getUserBookings = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -151,7 +151,7 @@ export const getUserBookings = async (req: AuthenticatedRequest, res: Response, 
 
     let queryConditions = {};
 
-    // Context splitting based on multi-tenant roles
+    // Context splitting based on multi-tenant roles mapping parameters
     if (userRole === "PROVIDER") {
       const providerProfile = await prisma.providerProfile.findUnique({ where: { userId } });
       if (!providerProfile) {
@@ -182,13 +182,15 @@ export const getUserBookings = async (req: AuthenticatedRequest, res: Response, 
       id: b.id,
       providerName: `${b.providerProfile?.user?.firstName || "Expert"} ${b.providerProfile?.user?.lastName || ""}`.trim(),
       customerName: `${b.customer?.firstName || "Client"} ${b.customer?.lastName || ""}`.trim(),
-      profession: b.title || "Service Specialist",
-      description: b.description,
-      date: new Date(b.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      profession: b.type || "INSTANT", // Aligned layout mapping token layer
+      
+      // Absolute Sync Fix: Binding directly to your real schema columns (notes and totalPrice) instead of missing fields context
+      description: b.notes || "Emergency service request dispatched.", 
       status: b.status,
-      budget: b.budget,
-      city: b.providerProfile?.city || "Nepal",
-      location: b.description.substring(0, 20) + "..."
+      budget: b.totalPrice || 500, 
+      
+      city: b.providerProfile?.city || b.location || "Nepal",
+      location: (b.notes || "Local Node").substring(0, 20) + "..."
     }));
 
     return sendSuccess(res, "User relational booking registers retrieved successfully.", { bookings: formattedBookings });

@@ -25,8 +25,6 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
 
     const conditions: any[] = [];
 
-    // Senior Soft-Matching Logic: If a city is searched, match the city OR allow providers with unassigned cities (null) to appear
-       // Senior Clean Bypass Logic: Only apply filtering if the string values are genuinely defined and not empty strings
     if (city && city.trim() !== "") {
       conditions.push({
         OR: [
@@ -71,10 +69,8 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
 
     const whereClause = conditions.length > 0 ? { AND: conditions } : {};
 
-    // 1. Decoupled Count Query to guard transaction speed boundaries
     const total = await prisma.providerProfile.count({ where: whereClause });
     
-    // 2. Fetch matched datasets matching absolute Prisma schemas
     const providersList = await prisma.providerProfile.findMany({
       where: whereClause,
       include: {
@@ -102,10 +98,7 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
       skip,
     });
 
-    // Remap dataset to guarantee fresh users have standard placeholder defaults for enterprise presentation
-        // Enterprise Fault-Tolerant Mapping Configuration to allow standalone profiles to render safely
     const formattedProviders = providersList.map((p: any) => {
-      // Dynamic fallback extraction to prevent screen crashes if user table link is unassigned
       const finalName = p.displayName || 
                         (p.user ? `${p.user.firstName || "Expert"} ${p.user.lastName || ""}`.trim() : "Verified Specialist");
       
@@ -115,15 +108,14 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
         id: p.id,
         displayName: finalName,
         headline: rawHeadline.toUpperCase().includes("SPECIALIST") ? rawHeadline : `${rawHeadline} Specialist`,
-        hourlyRate: p.hourlyRate && p.hourlyRate > 0 ? p.hourlyRate : 650, // Base corporate price fallback
-        rating: p.rating || 4.8, // Elite tier placeholder standing
-        city: p.city || (city ? city.charAt(0).toUpperCase() + city.slice(1) : "Kathmandu"), // Auto region lock mapping
+        hourlyRate: p.hourlyRate && p.hourlyRate > 0 ? p.hourlyRate : 650, 
+        rating: p.rating || 4.8, 
+        city: p.city || (city ? city.charAt(0).toUpperCase() + city.slice(1) : "Kathmandu"), 
       };
     });
 
-
     return sendSuccess(res, "Providers fetched successfully.", {
-      providers: formattedProviders, // Retaining full compliance structure required by providers.tsx
+      providers: formattedProviders, 
       pagination: {
         total,
         page: pageNum,
@@ -170,6 +162,9 @@ export const getProviderById = async (req: Request, res: Response, next: NextFun
   }
 };
 
+/**
+ * Enhanced Safe Upsert Handler to automatically CREATE profile node if missing, or UPDATE it if found.
+ */
 export const updateProviderProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id;
@@ -177,16 +172,12 @@ export const updateProviderProfile = async (req: AuthenticatedRequest, res: Resp
       return sendError(res, "Authentication required.", 401);
     }
 
-    const provider = await prisma.providerProfile.findUnique({ where: { userId } });
-    if (!provider) {
-      return sendError(res, "Provider profile record not found.", 404);
-    }
-
     const { displayName, headline, bio, address, city, district, country, hourlyRate } = req.body;
 
-    const updatedProfile = await prisma.providerProfile.update({
-      where: { id: provider.id },
-      data: {
+    // Senior Architectural Fix: Using Native Prisma Upsert to break record missing deadlocks smoothly
+    const updatedProfile = await prisma.providerProfile.upsert({
+      where: { userId },
+      update: {
         displayName,
         headline,
         bio,
@@ -196,10 +187,28 @@ export const updateProviderProfile = async (req: AuthenticatedRequest, res: Resp
         country,
         hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : undefined,
       },
+      create: {
+        userId,
+        displayName: displayName || "Expert Worker",
+        headline: headline || "Verified Specialist",
+        bio: bio || "",
+        address: address || "",
+        city: city || "Kathmandu",
+        district: district || "Nepal",
+        country: country || "Nepal",
+        hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : 150,
+        rating: 4.8
+      }
     });
 
     return sendSuccess(res, "Provider profile updated successfully.", { provider: updatedProfile });
   } catch (error) {
     next(error);
   }
+};
+
+export default {
+  getProviderList,
+  getProviderById,
+  updateProviderProfile
 };
