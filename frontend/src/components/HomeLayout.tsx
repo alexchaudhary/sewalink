@@ -179,7 +179,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
             <div className="lg:col-span-2">
               <Logo />
               <p className="mt-4 text-sm text-white/35 max-w-xs leading-relaxed">
-                SewaLink is a home services marketplace connecting homeowners with verified local professionals. Currently in active development.
+                Kamdar Nepal is a home services marketplace connecting homeowners with verified local professionals. Currently in active development.
               </p>
               {/* Social icons */}
               <div className="flex gap-2 mt-5">
@@ -244,7 +244,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 
           {/* Bottom bar */}
           <div className="border-t border-white/[0.05] pt-6 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-white/20">© {new Date().getFullYear()} SewaLink. All rights reserved.</p>
+            <p className="text-xs text-white/20">© {new Date().getFullYear()} Kamdar Nepal. All rights reserved.</p>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
               <span className="text-xs text-white/20">Platform in active development</span>

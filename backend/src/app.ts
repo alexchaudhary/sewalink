@@ -4,6 +4,7 @@ import helmet from "helmet";
 import compression from "compression";
 import dotenv from "dotenv";
 
+// 1. Structural Enterprise Router Imports Configuration
 import authRouter from "./routes/auth";
 import providerRouter from "./routes/providers";
 import bookingRouter from "./routes/bookings";
@@ -15,7 +16,7 @@ dotenv.config();
 
 const app = express();
 
-// 1. Security & Performance Optimization Middlewares
+// 2. Security & Performance Optimization Middlewares Layer
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -25,7 +26,7 @@ app.use(
 );
 app.use(compression());
 
-// 2. Comprehensive Robust CORS Configuration
+// 3. Comprehensive Robust CORS Policy Configurations
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
@@ -52,11 +53,11 @@ app.use(
   })
 );
 
-// 3. Request Stream Body Parsing Layers
+// 4. Request Stream Body Parsing Layers Matrix
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// 4. Base Information Root Route
+// 5. Base Information Root Route Endpoint
 app.get("/", (_req: Request, res: Response) => {
   res.json({
     message: "Welcome to SewaLink Enterprise Architecture Core API",
@@ -65,7 +66,7 @@ app.get("/", (_req: Request, res: Response) => {
   });
 });
 
-// 5. Health Check Metrics Endpoint
+// 6. Health Check Metrics Verification Endpoint
 app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({
     status: "ok",
@@ -74,14 +75,14 @@ app.get("/api/health", (_req: Request, res: Response) => {
   });
 });
 
-// 6. Application Enterprise Routing Mount Points
+// 7. Application Enterprise Routing Mount Points System Mapping
 app.use("/api/auth", authRouter);
 app.use("/api/providers", providerRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/payments", paymentRouter);
 app.use("/api/admin", adminRouter);
 
-// 7. Standard 404 Route Not Found Interceptor Boundary
+// 8. Standard 404 Route Not Found Interceptor Boundary
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
@@ -90,7 +91,7 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-// 8. Bind your centralized global errorHandler directly into the native Express stream
+// 9. Bind your centralized global errorHandler directly into the native Express stream
 app.use(errorHandler);
 
 export default app;

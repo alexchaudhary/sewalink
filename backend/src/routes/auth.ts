@@ -1,10 +1,7 @@
 import { Router } from "express";
 import { register, login, forgotPassword, verifyOtp, getMe } from "../controllers/authController";
 import { validate } from "../middleware/validate";
-
-// Testing both import paradigms to identify which module structure your project uses
-import protect from "../middleware/auth"; 
-
+import { authMiddleware as protect } from "../middleware/auth";
 import {
   registerSchema,
   loginSchema,
@@ -21,15 +18,14 @@ router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 router.post("/verify-otp", validate(verifyOtpSchema), verifyOtp);
 
 // ==========================================================================
-// 🚀 ENTERPRISE SOCIAL AUTHORIZATION MIDDLEWARE ROUTING (OAUTH SYSTEMS)
+//  SOCIAL AUTHORIZATION MIDDLEWARE ROUTING (OAUTH SYSTEMS)
 // ==========================================================================
 
 /**
- * 🔵 GOOGLE CLIENT AUTHENTICATION HANDSHAKE GATEWAY
+ *  GOOGLE CLIENT AUTHENTICATION HANDSHAKE GATEWAY
  * Redirects consumer/provider tokens directly to active Google Cloud Console engine
  */
 router.get("/google", (req, res) => {
-  // Replace these template credentials with your active Google Developer variables strings later
   const GOOGLE_OAUTH_REDIRECT_URL = "https://google.com";
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID || "MOCK_CLIENT_ID_PLACEHOLDER",
@@ -44,7 +40,7 @@ router.get("/google", (req, res) => {
 });
 
 /**
- * 🔵 FACEBOOK CORE AUTHORIZATION CONNECTION GATEWAY
+ *  FACEBOOK CORE AUTHORIZATION CONNECTION GATEWAY
  * Redirects client application frames securely to official Meta Developer Console
  */
 router.get("/facebook", (req, res) => {
@@ -60,7 +56,7 @@ router.get("/facebook", (req, res) => {
 });
 
 /**
- * ⚫ APPLE CORE HIGH SECURITY LOG-IN CONNECTOR MATRIX
+ * APPLE CORE HIGH SECURITY LOG-IN CONNECTOR MATRIX
  * Secured dynamic pipeline redirecting interface strings directly to Apple ID Nodes
  */
 router.get("/apple", (req, res) => {
@@ -73,7 +69,7 @@ router.get("/apple", (req, res) => {
     scope: "name email"
   });
 
-  console.log("➡️ [OAuth Dispatch] Redirecting client thread securely to Apple ID nodes.");
+  console.log(" [OAuth Dispatch] Redirecting client thread securely to Apple ID nodes.");
   return res.redirect(`${APPLE_OAUTH_REDIRECT_URL}?${params.toString()}`);
 });
 
@@ -94,17 +90,17 @@ router.get("/apple/callback", (req, res) => {
 
 
 // DIAGNOSTIC LOGS: Prints module loading results directly onto your console output panel
-console.log("🔍 [Diagnostic Scan] protect function variable is:", typeof protect);
-console.log("🔍 [Diagnostic Scan] getMe function variable is:", typeof getMe);
+console.log(" [Diagnostic Scan] protect function variable is:", typeof protect);
+console.log(" [Diagnostic Scan] getMe function variable is:", typeof getMe);
 
 if (protect && getMe) {
-  router.get("/me", protect, getMe);
-  console.log("✅ [Success] /api/auth/me path mounted successfully.");
+   router.get("/me", protect as any, getMe as any);
+  console.log(" [Success] /api/auth/me path mounted successfully.");
 } else {
   router.get("/me", (req, res) => {
     res.status(200).json({ success: true, user: { firstName: "Alex", lastName: "Chaudhary" } });
   });
-  console.log("⚠️ [Fallback Active] Mounted diagnostic mock payload bypass for development visualization testing.");
+  console.log(" [Fallback Active] Mounted diagnostic mock payload bypass for development visualization testing.");
 }
 
 export default router;
