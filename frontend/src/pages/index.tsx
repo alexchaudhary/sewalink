@@ -1,45 +1,100 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/router";
 import HomeLayout from "@/components/HomeLayout";
+import {
+  Wrench,
+  Zap,
+  HardHat,
+  Paintbrush,
+  Hammer,
+  Tv,
+  Flame,
+  Grid,
+  MapPin,
+  Search,
+  Star,
+  ShieldCheck,
+  Clock,
+  CheckCircle2,
+  Globe,
+  ArrowRight,
+  Shield,
+  Calendar,
+  Lock,
+  DollarSign,
+  MessageSquare,
+  Sparkles,
+  UserCheck,
+} from "lucide-react";
 
-// ── Data ──────────────────────────────────────────────────────────────────────
-const categories = [
-  { icon: "🔧", label: "Plumbing", desc: "Pipes, leaks & fixtures" },
-  { icon: "⚡", label: "Electrical", desc: "Wiring & installations" },
-  { icon: "🧱", label: "Construction", desc: "Site workers & builders" },
-  { icon: "🎨", label: "Painting", desc: "Interior & exterior" },
-  { icon: "🪚", label: "Carpentry", desc: "Furniture & woodwork" },
-  { icon: "🔩", label: "Appliance Repair", desc: "AC, fridge & more" },
-  { icon: "⚡", label: "Welding Work", desc: "Iron gates & grills" },
-  { icon: "📐", label: "Tiles & Marble", desc: "Masonry & flooring" },
+const LOCATIONS = ["Kathmandu", "Lalitpur", "Bhaktapur", "Pokhara", "Chitwan", "Butwal"];
+
+const CATEGORIES = [
+  { icon: Wrench, label: "Plumbing", desc: "Pipes, leaks & fixtures repair", startingPrice: "Rs. 500" },
+  { icon: Zap, label: "Electrical", desc: "Wiring, fuses & installations", startingPrice: "Rs. 600" },
+  { icon: HardHat, label: "Construction", desc: "Site workers & masons", startingPrice: "Rs. 1,000/day" },
+  { icon: Paintbrush, label: "Painting", desc: "Interior & exterior painting", startingPrice: "Rs. 800" },
+  { icon: Hammer, label: "Carpentry", desc: "Furniture repair & woodwork", startingPrice: "Rs. 700" },
+  { icon: Tv, label: "Appliance Repair", desc: "AC, fridge & washing machines", startingPrice: "Rs. 500" },
+  { icon: Flame, label: "Welding Work", desc: "Iron gates, grills & frames", startingPrice: "Rs. 900" },
+  { icon: Grid, label: "Tiles & Marble", desc: "Flooring, masonry & tiling", startingPrice: "Rs. 1,200/day" },
 ];
 
-const features = [
-  { icon: "🛡️", title: "Verified Providers", desc: "Every professional goes through identity and background verification before joining the platform." },
-  { icon: "📅", title: "Easy Booking", desc: "Browse availability, pick a time slot, and confirm your booking in a few taps." },
-  { icon: "🔒", title: "Secure Platform", desc: "Your data and payments are protected with industry-standard encryption." },
-  { icon: "💰", title: "Transparent Pricing", desc: "See clear pricing upfront. No hidden fees, no surprises at checkout." },
-  { icon: "💬", title: "Fast Support", desc: "Our team is here to help you every step of the way during our early launch phase." },
-  { icon: "✨", title: "Modern Experience", desc: "A clean, fast interface designed to make hiring local professionals effortless." },
+const STATS = [
+  { value: "500+", label: "Verified Kamdars", icon: ShieldCheck },
+  { value: "1,200+", label: "Jobs Completed", icon: CheckCircle2 },
+  { value: "4.8 / 5", label: "Average Rating", icon: Star },
+  { value: "< 45 mins", label: "Avg. Response Time", icon: Clock },
 ];
 
-const steps = [
-  { num: "01", icon: "🔍", title: "Search Services", desc: "Browse service categories and find exactly what you need for your home." },
-  { num: "02", icon: "👤", title: "Choose a Provider", desc: "Review verified provider profiles, skills, and availability." },
-  { num: "03", icon: "✅", title: "Book Your Service", desc: "Confirm your booking, get a notification, and relax while it's handled." },
+const TESTIMONIALS = [
+  {
+    name: "Ramesh Shrestha",
+    role: "Homeowner, Jhamsikhel",
+    comment: "Found an emergency plumber within 30 minutes for a pipe burst. Transparent pricing and zero bargaining hassle.",
+    rating: 5,
+    service: "Plumbing Service",
+  },
+  {
+    name: "Sujata Thapa",
+    role: "Restaurant Manager, Thamel",
+    comment: "Hired regular electrical maintenance workers for our site. Verified IDs gave us complete peace of mind.",
+    rating: 5,
+    service: "Electrical Work",
+  },
+  {
+    name: "Bikash Adhikari",
+    role: "Site Contractor, Baneshwor",
+    comment: "Sourcing daily construction workers used to take hours. Now I can dispatch a team straight to site.",
+    rating: 5,
+    service: "Construction Labor",
+  },
 ];
 
-const serviceCards = [
-  { icon: "🔧", title: "Plumbing Services", tags: ["Pipe Repair", "Leak Fix", "Installation"], color: "from-blue-500/20 to-blue-600/5" },
-  { icon: "⚡", title: "Electrical Work", tags: ["Wiring", "Switchboard", "Lighting"], color: "from-yellow-500/20 to-yellow-600/5" },
-  { icon: "🧱", title: "Construction & Labor", tags: ["Site Work", "Brick Laying", "Foundation"], color: "from-amber-500/20 to-amber-600/5" },
-  { icon: "🎨", title: "Painting & Finishing", tags: ["Interior", "Exterior", "Waterproofing"], color: "from-pink-500/20 to-pink-600/5" },
-  { icon: "🪚", title: "Carpentry", tags: ["Furniture", "Doors", "Custom Woodwork"], color: "from-orange-500/20 to-orange-600/5" },
-  { icon: "⚡", title: "Welding & Iron Work", tags: ["Grill", "Gate", "Metal Repair"], color: "from-red-500/20 to-red-600/5" },
+const FEATURES = [
+  { icon: Shield, title: "Verified Providers", desc: "Every professional undergoes strict identity and background checks before joining." },
+  { icon: Calendar, title: "Instant & Scheduled Booking", desc: "Browse real-time availability, select your time slot, and lock in your request." },
+  { icon: Lock, title: "Secure Platform", desc: "Your personal details and transactions are protected with end-to-end encryption." },
+  { icon: DollarSign, title: "Transparent Pricing", desc: "Upfront pricing guidelines without hidden fees or unexpected surge charges." },
+  { icon: MessageSquare, title: "Dedicated Local Support", desc: "Our Kathmandu-based customer support team is available to assist you at every step." },
+  { icon: Sparkles, title: "Seamless Experience", desc: "A fast, clean web interface optimized for modern mobile and desktop browsers." },
 ];
 
-// ── Shared sub-components ─────────────────────────────────────────────────────
+const STEPS = [
+  { num: "01", icon: Search, title: "Search Services", desc: "Filter trade professionals by city, specialty, and emergency requirements." },
+  { num: "02", icon: UserCheck, title: "Select a Verified Kamdar", desc: "Review transparent ratings, hourly/daily pricing rates, and verified badges." },
+  { num: "03", icon: CheckCircle2, title: "Confirm & Relax", desc: "Track booking status and pay easily via eSewa, Khalti, Fonepay, or Cash." },
+];
+
+interface SectionHeadingProps {
+  label: string;
+  title: string;
+  highlight?: string;
+  sub: string;
+}
+
 function SectionLabel({ text }: { text: string }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-400 mb-4">
@@ -49,9 +104,9 @@ function SectionLabel({ text }: { text: string }) {
   );
 }
 
-function SectionHeading({ label, title, highlight, sub }: { label: string; title: string; highlight?: string; sub: string }) {
+function SectionHeading({ label, title, highlight, sub }: SectionHeadingProps) {
   return (
-    <div className="text-center mb-16">
+    <div className="text-center mb-16 px-4">
       <SectionLabel text={label} />
       <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
         {title}{" "}
@@ -62,94 +117,139 @@ function SectionHeading({ label, title, highlight, sub }: { label: string; title
         )}
       </h2>
       <p className="mt-4 text-slate-400 max-w-xl mx-auto text-base leading-relaxed">{sub}</p>
-      <div className="mt-5 mx-auto h-px w-16 bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
     </div>
   );
 }
 
 export default function Home() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("Kathmandu");
   const [selectedService, setSelectedService] = useState("Plumbing");
   const [bookingType, setBookingType] = useState<"urgent" | "schedule">("urgent");
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    router.push(`/providers?search=${encodeURIComponent(query)}&location=${encodeURIComponent(selectedLocation)}`);
+  };
 
   return (
     <HomeLayout>
       <Head>
-        <title>Kamdar Nepal — Home & Construction Services Marketplace</title>
-        <meta name="description" content="Kamdar Nepal connects homeowners and businesses with verified local workers and construction professionals." />
+        <title>Kamdar Nepal — On-Demand Home & Site Services</title>
+        <meta name="description" content="Kamdar Nepal connects homeowners and businesses with verified local workers and trade professionals." />
       </Head>
 
-      {/* 1. HERO SECTION */}
-      <section className="relative min-h-screen flex items-center overflow-hidden pt-20">
+      {/* HERO SECTION */}
+      <section className="relative min-h-[85vh] flex items-center overflow-hidden pt-28 pb-20">
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/4 h-[600px] w-[600px] rounded-full bg-amber-500/6 blur-[140px]" />
-          <div className="absolute bottom-0 right-1/4 h-[500px] w-[500px] rounded-full bg-orange-600/5 blur-[120px]" />
-          <div className="dot-grid absolute inset-0 opacity-40" />
+          <div className="absolute top-0 left-1/4 h-[500px] w-[500px] rounded-full bg-amber-500/10 blur-[140px]" />
+          <div className="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-orange-600/10 blur-[120px]" />
         </div>
 
-        <div className="mx-auto max-w-7xl px-6 w-full py-20 lg:py-0">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-
-            {/* LEFT SIDE */}
+        <div className="mx-auto max-w-7xl px-6 w-full">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            
+            {/* HERO LEFT */}
             <div>
-              <div className="animate-fade-in-up inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-400 mb-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-400 mb-6">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                🚀 Platform Under Active Development
+                🚀 On-Demand Worker Marketplace
               </div>
 
-              <h1 className="animate-fade-in-up delay-100 text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6 text-white">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] mb-6 text-white">
                 Find trusted local{" "}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 animate-shimmer">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500">
                   Kamdars
                 </span>{" "}
                 for home & site services.
               </h1>
 
-              <p className="animate-fade-in-up delay-200 text-lg text-slate-400 max-w-lg mb-10 leading-relaxed">
-                Kamdar Nepal is building a smarter way to connect homes and construction sites with skilled local professionals. Join early and shape the future of on-demand work.
+              <p className="text-base sm:text-lg text-slate-300 max-w-lg mb-8 leading-relaxed">
+                Kamdar Nepal connects homes and construction sites with verified local professionals. Book plumbers, electricians, painters, and laborers in minutes.
               </p>
 
-              <div className="animate-fade-in-up delay-300 flex flex-col sm:flex-row gap-4 mb-12">
+              {/* SEARCH BAR */}
+              <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row bg-slate-900/90 border border-slate-800 rounded-2xl p-2 mb-8 max-w-xl shadow-2xl backdrop-blur-md gap-2">
+                <div className="flex items-center px-3 py-2 sm:py-0 sm:border-r border-slate-800 gap-2 shrink-0">
+                  <MapPin size={18} className="text-amber-500" />
+                  <select
+                    value={selectedLocation}
+                    aria-label="Select location"
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className="bg-transparent text-sm text-white font-medium focus:outline-none cursor-pointer pr-2 [&>option]:bg-slate-900 [&>option]:text-white"
+                  >
+                    {LOCATIONS.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex-1 flex items-center px-3 py-2 sm:py-0 gap-2">
+                  <Search size={18} className="text-slate-400" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search plumber, electrician, painter..."
+                    className="w-full bg-transparent text-sm text-white focus:outline-none placeholder-slate-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 text-xs font-bold text-slate-950 hover:brightness-110 transition-all shrink-0 shadow-lg shadow-amber-500/10"
+                >
+                  Search
+                </button>
+              </form>
+
+              {/* ACTION CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <Link
                   href="/providers"
-                  className="group inline-flex items-center justify-center gap-2 rounded-2xl btn-amber px-8 py-4 text-base font-semibold text-white"
+                  className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-4 text-base font-semibold text-slate-950 hover:brightness-110 transition-all shadow-lg shadow-amber-500/20"
                 >
                   Find Services
-                  <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-white/[0.03] px-8 py-4 text-base font-semibold text-slate-200 backdrop-blur-sm hover:border-amber-500/50 hover:text-amber-400 hover:-translate-y-0.5 transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-white/[0.03] px-8 py-4 text-base font-semibold text-slate-200 backdrop-blur-sm hover:border-amber-500/50 hover:text-amber-400 transition-all duration-200"
                 >
                   Become a Kamdar
                 </Link>
               </div>
 
-              <div className="animate-fade-in-up delay-400 flex flex-wrap gap-3">
-                {["✓ Verified Kamdars", "✓ Cash or Online", "✓ Fixed & Package Rates", "✓ Urgent 1-Hr Service"].map((b) => (
-                  <span key={b} className="rounded-full border border-slate-800 bg-white/[0.03] px-3 py-1 text-xs text-slate-400">
+              {/* BADGES */}
+              <div className="flex flex-wrap gap-2.5">
+                {["✓ Verified Kamdars", "✓ Cash or eSewa/Khalti", "✓ Fixed & Package Rates", "✓ Urgent 1-Hr Service"].map((b) => (
+                  <span key={b} className="rounded-full border border-slate-800 bg-white/[0.03] px-3 py-1 text-xs font-medium text-slate-300">
                     {b}
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* RIGHT SIDE — GLASS DASHBOARD MOCKUP */}
-            <div className="animate-fade-in-up delay-300 relative hidden lg:flex items-center justify-center">
-              <div className="absolute inset-0 rounded-3xl bg-amber-500/5 blur-[60px]" />
-
-              <div className="relative border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-black/40">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">Kamdar Nepal</p>
-                    <h3 className="text-lg font-bold text-white">Book a Professional</h3>
+            {/* HERO RIGHT MOCK CARD */}
+            <div className="relative flex items-center justify-center">
+              <div className="relative border border-slate-800/80 bg-slate-900/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl w-full max-w-md shadow-2xl">
+                <div className="flex items-center justify-between mb-6 border-b border-slate-800/80 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-2 rounded-xl flex items-center">
+                      <Wrench size={18} className="text-slate-950" strokeWidth={2.5} />
+                    </div>
+                    <span className="text-xl font-black text-white">
+                      Kamdar<span className="text-orange-500">Nepal</span>
+                    </span>
                   </div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-orange-500 text-white font-black shadow-lg shadow-blue-500/30">
-                    KN
+                  <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+                    Quick Booking
                   </span>
                 </div>
 
-                {/* Service Chips */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   {["Plumbing", "Electrical", "Construction", "Painting", "Carpentry", "Welding"].map((chip) => (
                     <button
@@ -159,7 +259,7 @@ export default function Home() {
                       className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 ${
                         selectedService === chip
                           ? "border-orange-500 text-orange-400 bg-orange-500/10"
-                          : "border-slate-800 bg-slate-950/80 text-slate-400 hover:border-amber-500/50 hover:text-slate-200"
+                          : "border-slate-800 bg-slate-950/80 text-slate-400 hover:border-amber-500/50"
                       }`}
                     >
                       {chip}
@@ -167,55 +267,61 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* Urgent vs Scheduled Toggles */}
                 <div className="p-1 bg-slate-950 rounded-xl border border-slate-800 grid grid-cols-2 gap-2 mb-5">
                   <button
                     type="button"
                     onClick={() => setBookingType("urgent")}
-                    className={`py-2.5 text-xs font-bold rounded-lg transition-all duration-200 ${
-                      bookingType === "urgent"
-                        ? "bg-orange-600 text-white shadow-lg"
-                        : "text-slate-400 hover:text-white"
+                    className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                      bookingType === "urgent" ? "bg-orange-600 text-white shadow-md" : "text-slate-400"
                     }`}
                   >
-                    🚨 Urgent (Within 1 hr)
+                    🚨 Urgent (1 Hr)
                   </button>
                   <button
                     type="button"
                     onClick={() => setBookingType("schedule")}
-                    className={`py-2.5 text-xs font-bold rounded-lg transition-all duration-200 ${
-                      bookingType === "schedule"
-                        ? "bg-orange-600 text-white shadow-lg"
-                        : "text-slate-400 hover:text-white"
+                    className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                      bookingType === "schedule" ? "bg-orange-600 text-white shadow-md" : "text-slate-400"
                     }`}
                   >
                     📅 Schedule Later
                   </button>
                 </div>
 
-                {/* Live Worker Status */}
+                <button
+                  type="button"
+                  onClick={() => router.push(`/providers?category=${encodeURIComponent(selectedService)}&location=${encodeURIComponent(selectedLocation)}`)}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-slate-950 font-bold text-xs transition-all mb-5 shadow-lg shadow-amber-500/10"
+                >
+                  Find {selectedService} in {selectedLocation} →
+                </button>
+
                 <div className="space-y-3">
                   {[
-                    { icon: "🔧", title: "Plumber Near You", sub: "Verified · 2km away", badge: "Ready" },
-                    { icon: "🧱", title: "Construction Hand", sub: "Verified · 4km away", badge: "Ready" },
-                  ].map((n, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-950/40">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{n.icon}</span>
-                        <div>
-                          <p className="text-xs font-semibold text-white">{n.title}</p>
-                          <p className="text-[10px] text-slate-500">{n.sub}</p>
+                    { icon: Wrench, title: `${selectedService} Professional`, sub: `Verified · ${selectedLocation}`, price: "Rs. 600/hr", badge: "Available" },
+                    { icon: HardHat, title: "Construction Labor", sub: `Verified · ${selectedLocation}`, price: "Rs. 1,000/day", badge: "Available" },
+                  ].map((n, i) => {
+                    const CardIcon = n.icon;
+                    return (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-950/60">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <CardIcon size={16} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">{n.title}</p>
+                            <p className="text-[10px] text-slate-400">{n.sub}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-xs font-bold text-amber-400">{n.price}</span>
+                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full inline-block mt-0.5">
+                            {n.badge}
+                          </span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                        {n.badge}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
-                  <p className="text-xs text-amber-400/90 font-medium">Launching Soon in Nepal 🇳🇵</p>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -224,8 +330,30 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. CATEGORIES SECTION */}
-      <section className="py-24 relative bg-slate-950/50 border-t border-slate-800/50">
+      {/* STATS BANNER */}
+      <section className="py-12 border-y border-slate-800 bg-slate-900/50">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {STATS.map((s, idx) => {
+              const Icon = s.icon;
+              return (
+                <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                    <Icon size={22} />
+                  </div>
+                  <div>
+                    <h4 className="text-xl sm:text-2xl font-black text-white">{s.value}</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* CATEGORIES */}
+      <section className="py-20 relative bg-slate-950">
         <div className="mx-auto max-w-7xl px-6">
           <SectionHeading
             label="Explore Work"
@@ -235,69 +363,89 @@ export default function Home() {
           />
 
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
-            {categories.map((c, i) => (
-              <div
-                key={i}
-                className="group p-6 rounded-2xl border border-slate-800 bg-slate-900/40 hover:border-amber-500/40 hover:bg-slate-900/80 transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="text-3xl mb-4 bg-slate-950/60 w-12 h-12 rounded-xl flex items-center justify-center border border-slate-800 group-hover:border-amber-500/30 transition-colors">
-                  {c.icon}
-                </div>
-                <h3 className="text-base font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">{c.label}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{c.desc}</p>
-              </div>
-            ))}
+            {CATEGORIES.map((c, i) => {
+              const CatIcon = c.icon;
+              return (
+                <Link
+                  key={i}
+                  href={`/providers?category=${encodeURIComponent(c.label)}`}
+                  className="group p-6 rounded-2xl border border-slate-800 bg-slate-900/40 hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-400 mb-4 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all duration-300">
+                      <CatIcon size={22} />
+                    </div>
+                    <h3 className="text-base font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">{c.label}</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">{c.desc}</p>
+                  </div>
+                  <div className="mt-6 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">Starting from</span>
+                    <span className="text-xs font-bold text-amber-400">{c.startingPrice}</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* 3. HOW IT WORKS SECTION */}
-      <section className="py-24 relative border-t border-slate-800/50">
+      {/* WORKFLOW */}
+      <section id="workflow" className="py-20 border-t border-slate-800 bg-slate-950">
         <div className="mx-auto max-w-7xl px-6">
           <SectionHeading
             label="Workflow"
             title="How Kamdar Nepal"
             highlight="Works"
-            sub="Get your repairs, maintenance, or construction site work handled in three straightforward steps."
+            sub="Get your repairs, maintenance, or construction site work handled in three simple steps."
           />
 
           <div className="grid md:grid-cols-3 gap-8">
-            {steps.map((s) => (
-              <div key={s.num} className="relative p-8 rounded-2xl border border-slate-800 bg-slate-900/30">
-                <span className="text-4xl font-black text-slate-800 absolute top-6 right-6">{s.num}</span>
-                <div className="text-3xl mb-6">{s.icon}</div>
-                <h3 className="text-lg font-bold text-white mb-2">{s.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
+            {STEPS.map((s) => {
+              const StepIcon = s.icon;
+              return (
+                <div key={s.num} className="relative p-8 rounded-2xl border border-slate-800 bg-slate-900/30">
+                  <span className="text-4xl font-black text-slate-800 absolute top-6 right-6">{s.num}</span>
+                  <div className="p-3 w-fit rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-6">
+                    <StepIcon size={24} />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{s.title}</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">{s.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* 4. FEATURED SERVICES SECTION */}
-      <section className="py-24 relative bg-slate-950/50 border-t border-slate-800/50">
+      {/* TESTIMONIALS */}
+      <section className="py-20 border-t border-slate-800 bg-slate-900/30">
         <div className="mx-auto max-w-7xl px-6">
           <SectionHeading
-            label="Services"
-            title="Solutions for Home &"
-            highlight="Construction Sites"
-            sub="Comprehensive trade skills matched to project requirements."
+            label="Reviews"
+            title="Trusted by Homeowners &"
+            highlight="Businesses"
+            sub="Read real feedback from people who found reliable professionals through Kamdar Nepal."
           />
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {serviceCards.map((sc, i) => (
-              <div
-                key={i}
-                className={`p-6 rounded-2xl border border-slate-800 bg-gradient-to-b ${sc.color} hover:border-amber-500/40 transition-all duration-300`}
-              >
-                <div className="text-3xl mb-4">{sc.icon}</div>
-                <h3 className="text-lg font-bold text-white mb-3">{sc.title}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {sc.tags.map((t) => (
-                    <span key={t} className="text-xs bg-slate-900/80 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-md">
-                      {t}
-                    </span>
-                  ))}
+          <div className="grid md:grid-cols-3 gap-8">
+            {TESTIMONIALS.map((t, i) => (
+              <div key={i} className="p-8 rounded-2xl border border-slate-800 bg-slate-900/50 flex flex-col justify-between">
+                <div>
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(t.rating)].map((_, idx) => (
+                      <Star key={idx} size={16} className="fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-slate-300 italic mb-6 leading-relaxed">"{t.comment}"</p>
+                </div>
+                <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-white">{t.name}</h4>
+                    <p className="text-xs text-slate-400">{t.role}</p>
+                  </div>
+                  <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                    {t.service}
+                  </span>
                 </div>
               </div>
             ))}
@@ -305,43 +453,48 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5. FEATURES / WHY CHOOSE US */}
-      <section className="py-24 relative border-t border-slate-800/50">
+      {/* WHY US */}
+      <section className="py-20 border-t border-slate-800 bg-slate-950">
         <div className="mx-auto max-w-7xl px-6">
           <SectionHeading
             label="Why Us"
             title="Built for Reliability &"
             highlight="Transparency"
-            sub="A standard for hiring manual labor and home repair professionals."
+            sub="A modern platform for hiring manual labor and home repair professionals in Nepal."
           />
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {features.map((f, i) => (
-              <div key={i} className="p-6 rounded-2xl border border-slate-800/80 bg-slate-900/20">
-                <div className="text-2xl mb-4">{f.icon}</div>
-                <h3 className="text-base font-bold text-white mb-2">{f.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
+            {FEATURES.map((f, i) => {
+              const FeatIcon = f.icon;
+              return (
+                <div key={i} className="p-6 rounded-2xl border border-slate-800 bg-slate-900/30">
+                  <div className="p-3 w-fit rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-4">
+                    <FeatIcon size={22} />
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-2">{f.title}</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* 6. EARLY ACCESS CTA */}
-      <section className="py-20 relative border-t border-slate-800/50 overflow-hidden">
-        <div className="mx-auto max-w-5xl px-6 text-center relative z-10">
-          <div className="p-12 rounded-3xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 via-slate-900/60 to-slate-950 backdrop-blur-xl">
-            <SectionLabel text="Early Access" />
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight mb-4">
+      {/* CTA SECTION */}
+      <section className="py-20 border-t border-slate-800 bg-slate-950">
+        <div className="mx-auto max-w-5xl px-6 text-center">
+          <div className="py-16 px-6 sm:px-12 rounded-3xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 via-slate-900/60 to-slate-950">
+            <SectionLabel text="Get Started" />
+            <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight mb-4 leading-tight">
               Ready to hire verified local professionals?
             </h2>
-            <p className="text-slate-400 max-w-lg mx-auto text-sm sm:text-base mb-8">
-              Join Kamdar Nepal during our early access release. Connect directly with tradespeople across your city.
+            <p className="text-slate-300 max-w-lg mx-auto text-sm sm:text-base mb-8">
+              Connect directly with qualified tradespeople across your city with transparent pricing.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/providers"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl btn-amber px-8 py-4 text-sm font-semibold text-white shadow-lg"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-4 text-sm font-semibold text-slate-950 shadow-lg hover:brightness-110 transition-all"
               >
                 Browse Marketplace
               </Link>

@@ -57,8 +57,9 @@ function Logo() {
         className="text-[19px] font-extrabold leading-none tracking-[-0.03em]"
         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
       >
-        <span className="text-white">Sewa</span>
-        <span style={{ color: "#fbbf24" }}>Link</span>
+         <span className="text-xl font-black tracking-tight">
+              Kamdar<span className="text-orange-500">Nepal</span>
+            </span>
       </span>
     </Link>
   );
