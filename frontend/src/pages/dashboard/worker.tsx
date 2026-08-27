@@ -266,41 +266,64 @@ export default function ProviderDashboard() {
               ) : incomingRequests.length === 0 ? (
                 <div className="p-8 text-center text-slate-500 text-sm bg-slate-950/40 rounded-xl border border-white/5">No pending customer requests found.</div>
               ) : (
-                incomingRequests.map((job: any) => (
-                  <div
-                    key={job.id}
-                    onClick={() => setSelectedJob(job)}
-                    className="bg-slate-950/60 border border-white/5 p-5 rounded-xl flex flex-col justify-between sm:flex-row sm:items-center gap-4 transition-all hover:border-orange-500/20 shadow-lg shadow-black/30 cursor-pointer group"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-white group-hover:text-orange-400 transition-colors">{job.customerName || "Verified Client"}</h3>
-                        <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded font-mono uppercase">{job.profession}</span>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-1">{job.description}</p>
-                      <div className="text-xs font-semibold text-slate-300 mt-2">
-                        💰 Budget: Rs. {job.budget} &nbsp;|&nbsp; 📍 {job.city}
-                      </div>
-                    </div>
+                incomingRequests.map((job: any) => {
+                  const phoneNum = job.customerPhone || job.customer?.phone || job.phone;
+                  return (
+                    <div
+                      key={job.id}
+                      onClick={() => setSelectedJob(job)}
+                      className="bg-slate-950/60 border border-white/5 p-5 rounded-xl flex flex-col justify-between sm:flex-row sm:items-center gap-4 transition-all hover:border-orange-500/20 shadow-lg shadow-black/30 cursor-pointer group"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-white group-hover:text-orange-400 transition-colors">{job.customerName || "Verified Client"}</h3>
+                          <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded font-mono uppercase">{job.profession}</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1 line-clamp-1">{job.description}</p>
+                        
+                        <div className="text-xs font-semibold text-slate-300 mt-2 flex flex-wrap items-center gap-3">
+                          <span>💰 Budget: Rs. {job.budget}</span>
+                          <span>|</span>
+                          <span>📍 {job.city}</span>
+                        </div>
 
-                    <div className="flex gap-2 flex-shrink-0 sm:justify-end" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        disabled={actionLoading !== null}
-                        onClick={() => handleStatusMutation(job.id, "REJECTED")}
-                        className="h-8 px-3.5 rounded-xl bg-white/5 border border-white/5 text-[11px] font-bold text-white/70 hover:bg-red-500/10 hover:text-red-400 focus:outline-none transition-colors"
-                      >
-                        Reject
-                      </button>
-                      <button
-                        disabled={actionLoading !== null}
-                        onClick={() => handleStatusMutation(job.id, "ACCEPTED")}
-                        className="h-8 px-4 rounded-xl bg-orange-600 text-[11px] font-black uppercase text-white hover:bg-orange-500 focus:outline-none transition-colors"
-                      >
-                        Accept
-                      </button>
+                        {/* 📞 Phone Contact Section */}
+                        <div className="mt-3 pt-2 border-t border-white/5 flex items-center gap-3">
+                          <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                            📞 {phoneNum ? phoneNum : "Phone Not Available"}
+                          </span>
+                          
+                          {phoneNum && (
+                            <a
+                              href={`tel:${phoneNum}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[10px] font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded hover:bg-emerald-600 hover:text-white transition-all"
+                            >
+                              Call Now 📞
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 flex-shrink-0 sm:justify-end" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          disabled={actionLoading !== null}
+                          onClick={() => handleStatusMutation(job.id, "REJECTED")}
+                          className="h-8 px-3.5 rounded-xl bg-white/5 border border-white/5 text-[11px] font-bold text-white/70 hover:bg-red-500/10 hover:text-red-400 focus:outline-none transition-colors"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          disabled={actionLoading !== null}
+                          onClick={() => handleStatusMutation(job.id, "ACCEPTED")}
+                          className="h-8 px-4 rounded-xl bg-orange-600 text-[11px] font-black uppercase text-white hover:bg-orange-500 focus:outline-none transition-colors"
+                        >
+                          Accept
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -329,24 +352,35 @@ export default function ProviderDashboard() {
                 ) : upcomingBookings.length === 0 ? (
                   <p className="text-xs text-slate-500">No active contracts assigned.</p>
                 ) : (
-                  upcomingBookings.map((slot: any) => (
-                    <div key={slot.id} className="bg-white/5 border border-white/5 p-3 rounded-lg space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-xs font-bold text-white">{slot.customerName}</p>
-                          <p className="text-[10px] text-slate-400">{slot.date}</p>
+                  upcomingBookings.map((slot: any) => {
+                    const slotPhone = slot.customerPhone || slot.customer?.phone || slot.phone;
+                    return (
+                      <div key={slot.id} className="bg-white/5 border border-white/5 p-3 rounded-lg space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-xs font-bold text-white">{slot.customerName}</p>
+                            <p className="text-[10px] text-slate-400">{slot.date}</p>
+                          </div>
+                          <span className="text-xs font-mono font-bold text-amber-400">Rs. {slot.budget}</span>
                         </div>
-                        <span className="text-xs font-mono font-bold text-amber-400">Rs. {slot.budget}</span>
+
+                        {/* Customer Phone details */}
+                        {slotPhone && (
+                          <div className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                            📞 <a href={`tel:${slotPhone}`} className="hover:underline">{slotPhone}</a>
+                          </div>
+                        )}
+
+                        <button
+                          disabled={actionLoading !== null}
+                          onClick={() => handleStatusMutation(slot.id, "COMPLETED")}
+                          className="w-full h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-600 text-emerald-400 hover:text-white text-[10px] font-black tracking-widest uppercase transition-all focus:outline-none"
+                        >
+                          {actionLoading === slot.id ? "Syncing..." : "Complete Work ✔"}
+                        </button>
                       </div>
-                      <button
-                        disabled={actionLoading !== null}
-                        onClick={() => handleStatusMutation(slot.id, "COMPLETED")}
-                        className="w-full h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-600 text-emerald-400 hover:text-white text-[10px] font-black tracking-widest uppercase transition-all focus:outline-none"
-                      >
-                        {actionLoading === slot.id ? "Syncing..." : "Complete Work ✔"}
-                      </button>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -467,10 +501,28 @@ export default function ProviderDashboard() {
                   <span className="text-slate-400 font-bold uppercase block">Customer Sender Name</span>
                   <p className="text-white font-semibold mt-0.5">{selectedJob.customerName}</p>
                 </div>
+
+                {/* Modal Phone Field */}
+                <div>
+                  <span className="text-slate-400 font-bold uppercase block">Customer Contact Phone</span>
+                  <p className="text-emerald-400 font-mono font-bold mt-0.5 flex items-center gap-2">
+                    📞 {selectedJob.customerPhone || selectedJob.customer?.phone || selectedJob.phone || "Not Provided"}
+                    {(selectedJob.customerPhone || selectedJob.customer?.phone || selectedJob.phone) && (
+                      <a
+                        href={`tel:${selectedJob.customerPhone || selectedJob.customer?.phone || selectedJob.phone}`}
+                        className="bg-emerald-600 text-white px-2 py-0.5 rounded text-[10px] uppercase font-sans font-bold hover:bg-emerald-500"
+                      >
+                        Call Direct
+                      </a>
+                    )}
+                  </p>
+                </div>
+
                 <div>
                   <span className="text-slate-400 font-bold uppercase block">Job Instructions Notes</span>
                   <p className="text-slate-200 mt-0.5">{selectedJob.description}</p>
                 </div>
+
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
                   <div>
                     <span className="text-slate-400 font-bold uppercase block">Payout Value</span>
