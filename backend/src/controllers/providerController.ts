@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { v2 as cloudinary } from "cloudinary";
 import prisma from "../config/prisma";
 import { sendSuccess, sendError } from "../utils/apiResponse";
 
@@ -25,8 +26,6 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
 
     const conditions: any[] = [];
 
-    // Senior Soft-Matching Logic: If a city is searched, match the city OR allow providers with unassigned cities (null) to appear
-       // Senior Clean Bypass Logic: Only apply filtering if the string values are genuinely defined and not empty strings
     if (city && city.trim() !== "") {
       conditions.push({
         OR: [
@@ -71,10 +70,8 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
 
     const whereClause = conditions.length > 0 ? { AND: conditions } : {};
 
-    // 1. Decoupled Count Query to guard transaction speed boundaries
     const total = await prisma.providerProfile.count({ where: whereClause });
     
-    // 2. Fetch matched datasets matching absolute Prisma schemas
     const providersList = await prisma.providerProfile.findMany({
       where: whereClause,
       include: {
@@ -102,10 +99,7 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
       skip,
     });
 
-    // Remap dataset to guarantee fresh users have standard placeholder defaults for enterprise presentation
-        // Enterprise Fault-Tolerant Mapping Configuration to allow standalone profiles to render safely
     const formattedProviders = providersList.map((p: any) => {
-      // Dynamic fallback extraction to prevent screen crashes if user table link is unassigned
       const finalName = p.displayName || 
                         (p.user ? `${p.user.firstName || "Expert"} ${p.user.lastName || ""}`.trim() : "Verified Specialist");
       
@@ -115,15 +109,14 @@ export const getProviderList = async (req: Request, res: Response, next: NextFun
         id: p.id,
         displayName: finalName,
         headline: rawHeadline.toUpperCase().includes("SPECIALIST") ? rawHeadline : `${rawHeadline} Specialist`,
-        hourlyRate: p.hourlyRate && p.hourlyRate > 0 ? p.hourlyRate : 650, // Base corporate price fallback
-        rating: p.rating || 4.8, // Elite tier placeholder standing
-        city: p.city || (city ? city.charAt(0).toUpperCase() + city.slice(1) : "Kathmandu"), // Auto region lock mapping
+        hourlyRate: p.hourlyRate && p.hourlyRate > 0 ? p.hourlyRate : 650,
+        rating: p.rating || 4.8,
+        city: p.city || (city ? city.charAt(0).toUpperCase() + city.slice(1) : "Kathmandu"),
       };
     });
 
-
     return sendSuccess(res, "Providers fetched successfully.", {
-      providers: formattedProviders, // Retaining full compliance structure required by providers.tsx
+      providers: formattedProviders,
       pagination: {
         total,
         page: pageNum,
@@ -179,7 +172,6 @@ export const updateProviderProfile = async (req: AuthenticatedRequest, res: Resp
 
     const { displayName, headline, bio, address, city, district, country, hourlyRate } = req.body;
 
-    // If provider profile exists, it updates; if row is missing, it dynamically creates a new record instantly
     const updatedProfile = await prisma.providerProfile.upsert({
       where: { userId },
       update: {
@@ -202,7 +194,7 @@ export const updateProviderProfile = async (req: AuthenticatedRequest, res: Resp
         district: district || "Nepal",
         country: country || "Nepal",
         hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) : 150,
-        rating: 4.8 // Default base rating entry seed
+        rating: 4.8
       }
     });
 
@@ -212,10 +204,6 @@ export const updateProviderProfile = async (req: AuthenticatedRequest, res: Resp
   }
 };
 
-
-/**
- * Express Media Controller: Dynamically stream buffer arrays onto Cloudinary matrix logs
- */
 export const uploadProviderAvatar = async (req: any, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id;
@@ -227,7 +215,6 @@ export const uploadProviderAvatar = async (req: any, res: Response, next: NextFu
       return sendError(res, "Missing payload parameters. No image file detected.", 400);
     }
 
-    // Configure your active Cloudinary node footprints instantly
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "kamdarnepal",
       api_key: process.env.CLOUDINARY_API_KEY || "your_api_key",
@@ -241,7 +228,6 @@ export const uploadProviderAvatar = async (req: any, res: Response, next: NextFu
       resource_type: "image"
     });
 
-    // Directly queries via userId parameter layout matching your unique schema model specs
     const updatedProfile = await prisma.providerProfile.update({
       where: { userId },
       data: { avatarUrl: uploadResponse.secure_url }
@@ -255,4 +241,3 @@ export const uploadProviderAvatar = async (req: any, res: Response, next: NextFu
     return next(error);
   }
 };
-

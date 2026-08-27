@@ -17,14 +17,11 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
       return sendError(res, "Access denied. Missing or malformed authorization token context.", 401);
     }
 
-    // Corrected the array index syntax for [1] here, 100% fixed
-        // Corrected the array index syntax for [1] here, 100% fixed
     const token = authHeader.split(" ")[1];
 
-    // Enterprise Fixed Secret Configuration - No .env dependencies allowed for fallback verification
-    const fixedSecret = "kamdarnepal_clean_architecture_key_2026";
-
-    const decoded = jwt.verify(token, fixedSecret) as { id: string; email: string; role: string };
+    // Use environment variable secret with fallback to maintain code safety
+    const jwtSecret = process.env.JWT_SECRET || "kamdarnepal_clean_architecture_key_2026";
+    const decoded = jwt.verify(token, jwtSecret) as { id: string; email: string; role: string };
 
     req.user = {
       id: decoded.id,
@@ -34,6 +31,9 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
 
     return next();
   } catch (error: any) {
+    // 🔥 LOG THE REAL ERROR TO THE TERMINAL SO WE CAN SEE WHAT'S WRONG
+    console.error("JWT Verification Error:", error.message); 
+    
     return sendError(res, "Authentication mapping rejected. Invalid token payload signature.", 401);
   }
 };

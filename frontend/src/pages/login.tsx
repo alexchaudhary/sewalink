@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/router"; 
+import { useRouter } from "next/navigation"; 
 import Link from "next/link";
 import { fetcher } from "../lib/api";
 import { Button } from "@/components/ui/button";
@@ -27,10 +27,10 @@ export default function LoginPage() {
         return;
       }
 
+      // Backend expects clean email and password credentials for database auth lookup
       const requestBody = {
         email: email.toLowerCase().trim(),
         password: password,
-        role: userType === "worker" ? "PROVIDER" : "CUSTOMER", 
       };
 
       const response = await fetcher("/api/auth/login", {

@@ -5,14 +5,14 @@ import { authMiddleware } from "../middleware/auth";
 const router = Router();
 
 // Secure all transaction routes with our verified corporate authMiddleware guard
-router.use(authMiddleware as any);
+router.use(authMiddleware);
 
 /**
  * Enterprise Procurement Service Pipeline Routes Mapping Index
  * Handled via named exports from bookingController
  */
-router.post("/", createBooking as any);
-router.get("/", getUserBookings as any);
-router.put("/:id/status", updateBookingStatus as any);
+router.post("/", createBooking);
+router.get("/", getUserBookings);
+router.put("/:id/status", updateBookingStatus);
 
 export default router;

@@ -66,24 +66,24 @@ enum ProviderVerificationStatus {
 // ==========================================
 
 model User {
-  id              String            @id @default(uuid())
+  id              String         @id @default(uuid())
   firstName       String
   lastName        String
-  email           String            @unique
-  phone           String            @unique
+  email           String         @unique
+  phone           String         @unique
   password        String
-  role            UserRole          @default(CUSTOMER)
-  emailVerified   Boolean           @default(false)
-  phoneVerified   Boolean           @default(false)
-  isDeleted       Boolean           @default(false) // Soft Delete for Compliance
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  role            UserRole       @default(CUSTOMER)
+  emailVerified   Boolean        @default(false)
+  phoneVerified   Boolean        @default(false)
+  isDeleted       Boolean        @default(false) // Soft Delete for Compliance
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   providerProfile ProviderProfile?
-  bookings        Booking[]         @relation("CustomerBookings")
-  reviews         Review[]          @relation("AuthorReviews")
-  chatThreads     ChatThread[]      @relation("UserThreads")
-  sentMessages    ChatMessage[]     @relation("SentMessages")
+  bookings        Booking[]      @relation("CustomerBookings")
+  reviews         Review[]       @relation("AuthorReviews")
+  chatThreads     ChatThread[]   @relation("UserThreads")
+  sentMessages    ChatMessage[]  @relation("SentMessages")
   notifications   Notification[]
 
   @@index([email])
@@ -102,6 +102,10 @@ model ProviderProfile {
   district             String?
   country              String?
   
+  // Added fields to match Worker Dashboard requirements
+  avatarUrl            String?                    
+  availabilityStatus   String                     @default("AVAILABLE")
+
   // Geolocation for proximity search
   latitude             Float?
   longitude            Float?
@@ -144,11 +148,11 @@ model ServiceCategory {
 }
 
 model ProviderCategory {
-  id          String          @id @default(uuid())
-  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  providerId  String
-  category    ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  categoryId  String
+  id         String          @id @default(uuid())
+  provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  providerId String
+  category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
 
   @@unique([providerId, categoryId]) // Prevents duplicate category assignments
 }
@@ -201,13 +205,18 @@ model Booking {
   customerId  String
   provider    ProviderProfile @relation("ProviderBookings", fields: [providerId], references: [id])
   providerId  String
-  type        BookingType
+  type        BookingType     @default(INSTANT)
   status      BookingStatus   @default(PENDING)
-  scheduledAt DateTime
-  totalPrice  Float
+  scheduledAt DateTime        @default(now())
+  totalPrice  Float           @default(0)
   notes       String?
-  location    String
+  location    String          @default("Kathmandu")
   
+  // Custom metadata fields expected by frontend UI
+  profession  String?
+  city        String?
+  budget      Float?
+
   latitude    Float?
   longitude   Float?
 

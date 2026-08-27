@@ -1,185 +1,74 @@
-import { Request, Response, NextFunction } from "express";
-import prisma from "../config/prisma";
-import { sendSuccess, sendError } from "../utils/apiResponse";
+import { Request, Response } from "express";
+import { PrismaClient, BookingStatus } from "@prisma/client";
 
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
-}
+const prisma = new PrismaClient();
 
-/**
- * Creates a new booking linked directly to the valid ProviderProfile model.
- */
-export const createBooking = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+// Create a new booking
+export const createBooking = async (req: Request, res: Response) => {
   try {
-    const customerId = req.user?.id;
-    const { providerId, providerProfileId, description, budget, date } = req.body;
+    const customerId = (req as any).user?.id;
+    const { providerId, description, budget, city, date, profession } = req.body;
 
-    if (!customerId) {
-      return sendError(res, "Authentication required. Missing user identity context.", 401);
-    }
-
-    const targetIdentifier = providerProfileId || providerId;
-
-    if (!targetIdentifier || !description || !budget) {
-      return sendError(res, "Missing parameters. Full booking constraints breached.", 400);
-    }
-
-    // 1. Resolve exact ProviderProfile instance
-    let providerProfile = await prisma.providerProfile.findFirst({
-      where: {
-        OR: [
-          { id: targetIdentifier },
-          { userId: targetIdentifier }
-        ]
-      }
-    });
-
-    if (!providerProfile) {
-      return sendError(res, "Target service professional profile record not found. Cannot create booking.", 404);
-    }
-
-    // 2. Connect using the exact ProviderProfile relation expected by Prisma Schema
-    const newBooking = await prisma.booking.create({
+    const booking = await prisma.booking.create({
       data: {
-        customer: { connect: { id: customerId } },
-        provider: { connect: { id: providerProfile.id } },
-        type: "INSTANT" as any, 
-        status: "PENDING" as any,
-        scheduledAt: date ? new Date(date) : new Date(), 
-        totalPrice: Number(budget), 
-        location: providerProfile.city || "Kathmandu",
-        notes: String(description).trim()
+        customerId,
+        providerId, // Must be a valid ProviderProfile ID
+        notes: description || "Service booking request", // Mapped to 'notes' in schema
+        totalPrice: Number(budget) || 0,                 // Mapped to 'totalPrice' in schema
+        city: city || "Kathmandu",
+        scheduledAt: date ? new Date(date) : new Date(), // Mapped to 'scheduledAt' in schema
+        profession: profession || "General Service",
+        status: BookingStatus.PENDING,
       },
     });
 
-    return sendSuccess(res, "Service request booking dispatched successfully to provider network.", { booking: newBooking }, 201);
-  } catch (error) {
-    return next(error);
+    return res.status(201).json({ success: true, booking });
+  } catch (error: any) {
+    console.error("Booking creation error:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/**
- * Updates booking status correctly checking provider ownership through ProviderProfile.
- */
-export const updateBookingStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+// GET /api/bookings - Scoped to the logged-in user's role/ID
+export const getUserBookings = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
-    const userRole = req.user?.role?.toUpperCase();
-    const { id } = req.params;
-    const { status } = req.body;
+    const userId = (req as any).user?.id;
 
-    if (!userId || !userRole) {
-      return sendError(res, "Authentication required. Profile context missing.", 401);
-    }
-    if (!status) {
-      return sendError(res, "Missing status parameter criteria block.", 400);
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized access" });
     }
 
-    const normalizedStatus = status.toUpperCase();
-    if (!["PENDING", "CONFIRMED", "ACCEPTED", "COMPLETED", "REJECTED", "CANCELLED"].includes(normalizedStatus)) {
-      return sendError(res, "Invalid state assignment. Booking status boundary not recognized.", 400);
-    }
-
-    const existingBooking = await prisma.booking.findUnique({
-      where: { id },
-      include: { provider: true },
+    // Find if the user has an associated provider profile
+    const providerProfile = await prisma.providerProfile.findUnique({
+      where: { userId },
     });
 
-    if (!existingBooking) {
-      return sendError(res, "Target service booking log not found.", 404);
-    }
+    const providerProfileId = providerProfile?.id;
 
-    if (userRole === "PROVIDER" || userRole === "WORKER") {
-      const isOwner = 
-        existingBooking.provider?.userId === userId || 
-        existingBooking.provider?.id === userId;
-
-      if (!isOwner) {
-        return sendError(res, "Forbidden access. You do not own this service profile thread.", 403);
-      }
-    } else if (userRole === "CUSTOMER") {
-      if (existingBooking.customerId !== userId) {
-        return sendError(res, "Forbidden access. You do not own this customer profile thread.", 403);
-      }
-      if (!["CANCELLED"].includes(normalizedStatus)) {
-        return sendError(res, "Forbidden action. Customers can only trigger CANCELLED status parameters.", 403);
-      }
-    }
-
-    const updatedBooking = await prisma.booking.update({
-      where: { id },
-      data: { status: normalizedStatus as any },
-    });
-
-    return sendSuccess(res, "Booking track lifecycle status updated successfully.", { booking: updatedBooking });
-  } catch (error) {
-    return next(error);
-  }
-};
-
-/**
- * Retrieves User Bookings based on ProviderProfile or Customer ID.
- */
-export const getUserBookings = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.user?.id;
-    const userRole = req.user?.role?.toUpperCase(); 
-
-    if (!userId || !userRole) {
-      return sendError(res, "Authentication required. Missing session tokens.", 401);
-    }
-
-    let queryConditions: any = {};
-
-    if (userRole === "PROVIDER" || userRole === "WORKER") {
-      const providerProfile = await prisma.providerProfile.findFirst({
-        where: {
-          OR: [
-            { userId },
-            { id: userId }
-          ]
-        }
-      });
-
-      if (!providerProfile) {
-        return res.status(200).json({
-          success: true,
-          message: "No provider profile registered for this account.",
-          bookings: [],
-          data: { bookings: [] }
-        });
-      }
-
-      queryConditions = { provider: { id: providerProfile.id } };
-    } else {
-      queryConditions = { customerId: userId };
-    }
-
-    const bookingsList = await prisma.booking.findMany({
-      where: queryConditions,
+    // Fetch bookings where user is either the customer or the provider profile
+    const bookings = await prisma.booking.findMany({
+      where: {
+        OR: [
+          ...(providerProfileId ? [{ providerId: providerProfileId }] : []),
+          { customerId: userId }
+        ]
+      },
       include: {
         customer: {
-          select: { 
-            id: true, 
-            firstName: true, 
-            lastName: true, 
-            email: true, 
-            phone: true 
-          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true,
+          }
         },
         provider: {
           include: {
             user: {
               select: {
-                id: true,
                 firstName: true,
                 lastName: true,
-                phone: true,
-                email: true
               }
             }
           }
@@ -188,44 +77,56 @@ export const getUserBookings = async (req: AuthenticatedRequest, res: Response, 
       orderBy: { createdAt: "desc" },
     });
 
-    const formattedBookings = bookingsList.map((b: any) => {
-      const notesText = b.notes || "Emergency service request dispatched.";
-      const dateString = b.scheduledAt 
-        ? new Date(b.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) 
-        : "";
+    // Map Prisma models into a flat layout expected by the frontend UI
+    const formattedBookings = bookings.map((b: any) => ({
+      id: b.id,
+      customerId: b.customerId,
+      providerId: b.providerId,
+      customerName: b.customer ? `${b.customer.firstName} ${b.customer.lastName}`.trim() : "Anonymous",
+      customerPhone: b.customer?.phone || "N/A",
+      description: b.notes,          // Mapped back from schema field 'notes'
+      budget: b.totalPrice,          // Mapped back from schema field 'totalPrice'
+      city: b.city,
+      date: b.scheduledAt,           // Mapped back from schema field 'scheduledAt'
+      profession: b.profession,
+      status: b.status,
+      createdAt: b.createdAt,
+    }));
 
-      const customerFullName = b.customer 
-        ? `${b.customer.firstName || ""} ${b.customer.lastName || ""}`.trim() || "Client"
-        : "Client";
+    return res.status(200).json({ success: true, bookings: formattedBookings });
+  } catch (error: any) {
+    console.error("Get bookings error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-      const providerUser = b.provider?.user;
-      const providerFullName = providerUser 
-        ? `${providerUser.firstName || ""} ${providerUser.lastName || ""}`.trim() || "Expert"
-        : "Expert";
+// PUT /api/bookings/:id/status - Update job status
+export const updateBookingStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
 
-      return {
-        id: b.id,
-        providerName: providerFullName,
-        customerName: customerFullName,
-        customerPhone: b.customer?.phone || "N/A",
-        customerEmail: b.customer?.email || "N/A",
-        profession: b.type || "INSTANT",
-        description: notesText,
-        date: dateString,
-        status: b.status,
-        budget: b.totalPrice || 500,
-        city: b.provider?.city || b.location || "Kathmandu",
-        location: b.location || notesText
-      };
+    const upperStatus = status?.toUpperCase();
+    
+    // Map UI statuses ("ACCEPTED" etc) to Prisma Enum safely
+    let mappedStatus: BookingStatus = BookingStatus.PENDING;
+    if (upperStatus === "CONFIRMED" || upperStatus === "ACCEPTED") {
+      mappedStatus = BookingStatus.CONFIRMED;
+    } else if (upperStatus === "REJECTED" || upperStatus === "CANCELLED") {
+      mappedStatus = BookingStatus.REJECTED;
+    } else if (upperStatus === "COMPLETED") {
+      mappedStatus = BookingStatus.COMPLETED;
+    } else if (upperStatus === "IN_PROGRESS") {
+      mappedStatus = BookingStatus.IN_PROGRESS;
+    }
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id },
+      data: { status: mappedStatus },
     });
 
-    return res.status(200).json({
-      success: true,
-      message: "User relational booking registers retrieved successfully.",
-      bookings: formattedBookings,
-      data: { bookings: formattedBookings }
-    });
-  } catch (error) {
-    return next(error);
+    return res.status(200).json({ success: true, booking: updatedBooking });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
