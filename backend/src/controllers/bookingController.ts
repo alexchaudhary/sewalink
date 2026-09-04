@@ -4,28 +4,63 @@ import { PrismaClient, BookingStatus } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Create a new booking
+// Create a new booking
 export const createBooking = async (req: Request, res: Response) => {
   try {
     const customerId = (req as any).user?.id;
     const { providerId, description, budget, city, date, profession } = req.body;
 
+    // Validate required authentication and booking fields
+    if (!customerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access. Customer authentication is required.",
+      });
+    }
+
+    if (!providerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Provider is required.",
+      });
+    }
+
+    // Validate provider profile exists
+    const provider = await prisma.providerProfile.findUnique({
+      where: { id: providerId },
+    });
+
+    if (!provider) {
+      return res.status(404).json({
+        success: false,
+        message: "Provider not found.",
+      });
+    }
+
     const booking = await prisma.booking.create({
       data: {
         customerId,
-        providerId, // Must be a valid ProviderProfile ID
-        notes: description || "Service booking request", // Mapped to 'notes' in schema
-        totalPrice: Number(budget) || 0,                 // Mapped to 'totalPrice' in schema
+        providerId,
+        notes: description || "Service booking request",
+        totalPrice: Number(budget) || 0,
         city: city || "Kathmandu",
-        scheduledAt: date ? new Date(date) : new Date(), // Mapped to 'scheduledAt' in schema
+        scheduledAt: date ? new Date(date) : new Date(),
         profession: profession || "General Service",
         status: BookingStatus.PENDING,
       },
     });
 
-    return res.status(201).json({ success: true, booking });
+    return res.status(201).json({
+      success: true,
+      booking,
+    });
   } catch (error: any) {
     console.error("Booking creation error:", error);
-    return res.status(500).json({ success: false, message: error.message });
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -101,15 +136,60 @@ export const getUserBookings = async (req: Request, res: Response) => {
 };
 
 // PUT /api/bookings/:id/status - Update job status
+// PUT /api/bookings/:id/status - Update job status
 export const updateBookingStatus = async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+
     const { id } = req.params;
     const { status } = req.body;
 
+    // Only PROVIDER can update booking status
+    if (!userId || userRole !== "PROVIDER") {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden access. Only providers can update booking status.",
+      });
+    }
+
+    // Find the logged-in provider's profile
+    const providerProfile = await prisma.providerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!providerProfile) {
+      return res.status(403).json({
+        success: false,
+        message: "Provider profile not found.",
+      });
+    }
+
+    // Find the booking
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found.",
+      });
+    }
+
+    // Make sure this provider owns the booking
+    if (booking.providerId !== providerProfile.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden access. You cannot update this booking.",
+      });
+    }
+
     const upperStatus = status?.toUpperCase();
-    
-    // Map UI statuses ("ACCEPTED" etc) to Prisma Enum safely
+
+    // Map UI statuses to Prisma Enum safely
     let mappedStatus: BookingStatus = BookingStatus.PENDING;
+
     if (upperStatus === "CONFIRMED" || upperStatus === "ACCEPTED") {
       mappedStatus = BookingStatus.CONFIRMED;
     } else if (upperStatus === "REJECTED" || upperStatus === "CANCELLED") {
@@ -118,6 +198,11 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
       mappedStatus = BookingStatus.COMPLETED;
     } else if (upperStatus === "IN_PROGRESS") {
       mappedStatus = BookingStatus.IN_PROGRESS;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid booking status.",
+      });
     }
 
     const updatedBooking = await prisma.booking.update({
@@ -125,8 +210,16 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
       data: { status: mappedStatus },
     });
 
-    return res.status(200).json({ success: true, booking: updatedBooking });
+    return res.status(200).json({
+      success: true,
+      booking: updatedBooking,
+    });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Update booking status error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

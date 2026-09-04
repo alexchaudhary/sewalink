@@ -1,20 +1,20 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
+import {
+  createCheckoutSession,
+  handleWebhook,
+} from "../controllers/paymentController";
 
 const router = Router();
 
-// Secure all digital transaction routes with our verified corporate authMiddleware guard
-router.use(authMiddleware as any);
+// Stripe webhook does NOT use JWT authentication
+router.post("/webhook", handleWebhook as any);
 
-/**
- * Enterprise Payment Gateway System Routes Index
- * Handled via secure clean mock callback functions to guarantee pipeline transactions
- */
-router.post("/process", (req, res) => {
-  return res.status(200).json({
-    success: true,
-    message: "Escrow pipeline transaction initialized successfully."
-  });
-});
+// Customer payment requires authentication
+router.post(
+  "/process",
+  authMiddleware as any,
+  createCheckoutSession as any
+);
 
 export default router;

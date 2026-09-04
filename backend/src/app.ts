@@ -54,13 +54,18 @@ app.use(
 );
 
 // 4. Request Stream Body Parsing Layers Matrix
+app.use(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" })
+);
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // 5. Base Information Root Route Endpoint
 app.get("/", (_req: Request, res: Response) => {
   res.json({
-    message: "Welcome to SewaLink Enterprise Architecture Core API",
+    message: "Welcome to Kamdar Nepal API",
     status: "healthy",
     docs: "/api/health",
   });

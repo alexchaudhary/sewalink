@@ -37,3 +37,17 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
     return sendError(res, "Authentication mapping rejected. Invalid token payload signature.", 401);
   }
 };
+
+export const requireRole = (...allowedRoles: string[]) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return sendError(
+        res,
+        "Forbidden access. Required role not granted.",
+        403
+      );
+    }
+
+    return next();
+  };
+};

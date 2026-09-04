@@ -17,7 +17,7 @@ async function bootstrapServer() {
 
     // 2. Initialize Express application layer mapping bindings
     app.listen(PORT, () => {
-      console.log("⚡ [SewaLink Architecture Core] Runtime gateway engine online and listening.");
+      console.log("⚡ [Kamdar Nepal] Runtime gateway engine online and listening.");
       console.log(`📡 [Active Grid Cluster] Mode: ${NODE_ENV.toUpperCase()} | Port Interface Target Node: ${PORT}`);
     });
 

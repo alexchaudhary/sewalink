@@ -33,7 +33,7 @@ export default function LoginPage() {
         password: password,
       };
 
-      const response = await fetcher("/api/auth/login", {
+      const response = await fetcher("/auth/login", {
         method: "POST",
         body: JSON.stringify(requestBody),
       });
@@ -44,10 +44,19 @@ export default function LoginPage() {
         setError("Authentication handshake failed. Storage token parameters not resolved.");
         return;
       }
+window.localStorage.setItem("kamdarnepal_token", sessionToken);
 
-      window.localStorage.setItem("kamdarnepal_token", sessionToken);
+const loggedInUser =
+  response.data?.user || response.user;
 
-      const dbUserRole = response.data?.user?.role || response.user?.role;
+if (loggedInUser) {
+  window.localStorage.setItem(
+    "user",
+    JSON.stringify(loggedInUser)
+  );
+}
+
+const dbUserRole = loggedInUser?.role;
 
       if (dbUserRole === "PROVIDER") {
         router.push("/dashboard/worker"); 

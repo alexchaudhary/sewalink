@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getProviderList, getProviderById, updateProviderProfile, uploadProviderAvatar } from "../controllers/providerController";
-import { authMiddleware } from "../middleware/auth";
+import { authMiddleware, requireRole } from "../middleware/auth";
 import multer from "multer";
 
 const router = Router();
@@ -22,13 +22,19 @@ router.get("/:id", getProviderById as any);
  * Secured Professional Workforce Context Lifecycle Configurations
  */
 // 1. Core Profile Text Metrics Form Handler Router Nodes
-router.put("/profile", authMiddleware as any, updateProviderProfile as any);
+router.put(
+  "/profile",
+  authMiddleware as any,
+  requireRole("PROVIDER") as any,
+  updateProviderProfile as any
+);
 
 // 2. Direct Media Binary Asset Stream Controller Hook Up Node
 router.post(
-  "/avatar", 
-  authMiddleware as any, 
-  upload.single("avatar"), // Multer hooks securely to grab the form-data parameter named 'avatar'
+  "/avatar",
+  authMiddleware as any,
+  requireRole("PROVIDER") as any,
+  upload.single("avatar"),
   uploadProviderAvatar as any
 );
 

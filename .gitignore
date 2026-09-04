@@ -35,3 +35,9 @@ Thumbs.db
 .agents/
 skills-lock.json
 .aider*
+
+# TypeScript Build Cache
+*.tsbuildinfo
+
+# Backup Files
+*.backup
