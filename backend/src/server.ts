@@ -1,55 +1,35 @@
-import http from "http";
 import app from "./app";
-import { Server } from "socket.io";
-import dotenv from "dotenv";
+import prisma from "./config/prisma";
 
-dotenv.config();
-
+// Safe dynamic fallbacks for absolute server configuration
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+const NODE_ENV = process.env.NODE_ENV || "development";
 
-const server = http.createServer(app);
+/**
+ * Enterprise Production-Grade Core Server Application Bootstrap Launchpad
+ * Clean Architecture Model - No Fallback Mock Bypasses Allowed
+ */
+async function bootstrapServer() {
+  try {
+    // 1. Establish verified atomic connection handshake with the Neon Database cluster
+    await prisma.$connect();
+    console.log("🚀 [Neon Database Cluster] Core datastore connection established successfully.");
 
-// Allowed origins setup
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "http://localhost:3000",
-  "http://localhost:5173",
-].filter((url): url is string => Boolean(url));
+    // 2. Initialize Express application layer mapping bindings
+    app.listen(PORT, () => {
+      console.log("⚡ [Kamdar Nepal] Runtime gateway engine online and listening.");
+      console.log(`📡 [Active Grid Cluster] Mode: ${NODE_ENV.toUpperCase()} | Port Interface Target Node: ${PORT}`);
+    });
 
-const io = new Server(server, {
-  cors: {
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
-        return callback(null, true);
-      }
-      return callback(new Error("Socket CORS Policy: Access Denied"));
-    },
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+  } catch (startupError: any) {
+    console.error("❌ [Server Process Exception] Fatal framework bootstrap sequence failed:");
+    console.error(startupError?.message || startupError);
+    
+    // Explicit process isolation handler to prevent unhandled background zombie states
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+}
 
-io.on("connection", (socket) => {
-  console.log("⚡ Socket connected:", socket.id);
-
-  socket.on("join-room", (room: string) => {
-    if (room) {
-      socket.join(room);
-      console.log(`Socket ${socket.id} joined room: ${room}`);
-    }
-  });
-
-  socket.on("new-message", (payload: { threadId: string; message: any }) => {
-    if (payload?.threadId) {
-      io.to(payload.threadId).emit("message", payload);
-    }
-  });
-
-  socket.on("disconnect", (reason) => {
-    console.log(`❌ Socket disconnected: ${socket.id} (Reason: ${reason})`);
-  });
-});
-
-server.listen(PORT, () => {
-  console.log(`🚀 Server listening on http://localhost:${PORT}`);
-});
+// Fire server process pipeline vectors
+bootstrapServer();

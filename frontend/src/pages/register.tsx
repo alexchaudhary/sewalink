@@ -1,464 +1,378 @@
-import type { FormEvent } from "react";
-import { useState } from "react";
+"use client";
+
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
-  User,
+  CheckCircle2,
+  Lock,
   Mail,
   Phone,
-  Lock,
+  User,
+  Wrench,
+  Briefcase,
+  ShieldAlert,
+  Layers,
   Eye,
   EyeOff,
-  ArrowRight,
-  Loader2,
-  CheckCircle2,
+  ChevronDown,
 } from "lucide-react";
-import { fetcher } from "../lib/api";
 
-// ── Left panel service chips ──────────────────────────────────────────────────
-const CHIPS = [
-  { icon: "🔧", label: "Plumber" },
-  { icon: "⚡", label: "Electrician" },
-  { icon: "🔨", label: "Carpenter" },
-  { icon: "🖌️", label: "Painter" },
-  { icon: "🧹", label: "Cleaner" },
-  { icon: "💻", label: "IT Support" },
-];
-
-// ── Avatar gradients for social proof ────────────────────────────────────────
-const AVATAR_GRADIENTS = [
-  "from-amber-400 to-orange-500",
-  "from-violet-400 to-purple-500",
-  "from-emerald-400 to-teal-500",
-  "from-sky-400 to-blue-500",
-  "from-rose-400 to-pink-500",
-];
-const AVATAR_INITIALS = ["R", "S", "A", "P", "M"];
-
-// ── Reusable field wrapper ────────────────────────────────────────────────────
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[10.5px] font-semibold uppercase tracking-[0.4px] text-white/35">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-// ── Page ──────────────────────────────────────────────────────────────────────
 export default function RegisterPage() {
   const router = useRouter();
-
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     password: "",
-    role: "CUSTOMER",
   });
+  const [userType, setUserType] = useState<"customer" | "worker">("customer");
+  const [skill, setSkill] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading,    setIsLoading]    = useState(false);
-  const [showSuccess,  setShowSuccess]  = useState(false);
-  const [error,        setError]        = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [apiError, setApiError] = useState("");
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const skillsList = [
+    { value: "painter", label: "Painter (पेन्टर)" },
+    { value: "electrician", label: "Electrician (इलेक्ट्रिसियन)" },
+    { value: "plumber", label: "Plumber (प्लम्बर)" },
+    { value: "carpenter", label: "Carpenter (कार्पेन्टर)" },
+    { value: "construction", label: "Construction Worker (मजदुर)" },
+  ];
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleInputChange = (key: string, value: string) => {
+    setForm({ ...form, [key]: value });
+    setErrors({ ...errors, [key]: undefined });
+    setApiError("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    const newErrors: Record<string, string> = {};
 
-    // Client-side validation
-    if (!form.firstName.trim()) { setError("First name is required."); return; }
-    if (!form.email.trim())     { setError("Email address is required."); return; }
-    if (form.password && form.password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (!form.firstName.trim()) newErrors.firstName = "Required";
+    if (!form.lastName.trim()) newErrors.lastName = "Required";
+    if (!form.email.includes("@")) newErrors.email = "Invalid email";
+
+    const phoneRegex = /^(98|97)\d{8}$/;
+    if (!form.phone.trim()) {
+      newErrors.phone = "Required";
+    } else if (!phoneRegex.test(form.phone.trim())) {
+      newErrors.phone = "Must be valid Nepal number (98/97...)";
+    }
+
+    if (form.password.length < 8) newErrors.password = "Min 8 chars";
+
+    if (!agreeTerms) {
+      setApiError("You must agree to the Terms of Service and Privacy Policy.");
       return;
     }
 
-    setIsLoading(true);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    if (userType === "worker" && !skill) {
+      setApiError("Please select your professional trade.");
+      return;
+    }
+
     try {
-      const data = await fetcher("/api/auth/register", {
+      setLoading(true);
+      setApiError("");
+
+      const response = await fetch("http://localhost:4000/api/auth/register", {
         method: "POST",
-        body: JSON.stringify(form),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.toLowerCase().trim(),
+          phone: form.phone.trim(),
+          password: form.password,
+          role: userType === "worker" ? "PROVIDER" : "CUSTOMER",
+          skill: userType === "worker" ? skill.toUpperCase() : undefined,
+        }),
       });
-      window.localStorage.setItem("sewalink_token", data.token);
-      setShowSuccess(true);
-      setTimeout(() => router.push("/dashboard"), 1400);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Registration failed on server side processing."
+        );
+      }
+
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
     } catch (err: any) {
-      setError(err.message ?? "Something went wrong. Please try again.");
+      setApiError(
+        err?.message || "Registration failed backend connection handshake."
+      );
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // ── Input class helper ──────────────────────────────────────────────────────
-  const inputCls = (extra = "") =>
-    `w-full bg-white/[0.05] border border-white/[0.08] rounded-xl py-2.5 text-[12.5px] text-white placeholder:text-white/20 outline-none transition-all duration-200 focus:border-amber-500/60 focus:bg-amber-500/[0.05] focus:shadow-[0_0_0_3px_rgba(245,158,11,0.10)] ${extra}`;
-
   return (
-    <div
-      className="min-h-screen w-full lg:grid lg:grid-cols-[52%_1fr]"
-      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-    >
-      {/* ══════════════════════════════════════════════════════════════════
-          LEFT PANEL
-      ══════════════════════════════════════════════════════════════════ */}
-      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-[#0d1117] via-[#0a0d18] to-[#0c1020] px-12 py-10">
+    <main className="min-h-screen bg-[#060810] text-white flex items-center justify-center font-sans p-5 select-none relative overflow-hidden">
+      {/* Background Layer Ambiance Ambient Lighting */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[450px] h-[450px] bg-orange-500/5 blur-[130px] rounded-full pointer-events-none" />
 
-        {/* Top accent line */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/35 to-transparent" />
-
-        {/* Glow blobs — inline filter:blur to avoid Tailwind purge issues */}
-        <div
-          className="pointer-events-none absolute -top-20 -left-20 h-80 w-80 rounded-full bg-orange-400/[0.13]"
-          style={{ filter: "blur(120px)" }}
-        />
-        <div
-          className="pointer-events-none absolute -bottom-16 -right-16 h-72 w-72 rounded-full bg-indigo-500/[0.10]"
-          style={{ filter: "blur(120px)" }}
-        />
-
-        {/* Dot grid */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
-
-        {/* ── TOP: Logo + copy ── */}
-        <div className="relative z-10">
-          {/* Logo */}
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-10 no-underline group">
-            {/* SVG icon mark */}
-            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-gradient-to-br from-amber-400 to-orange-500 shadow-[0_4px_18px_rgba(245,158,11,0.40)] transition-shadow duration-200 group-hover:shadow-[0_4px_28px_rgba(245,158,11,0.55)]">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path
-                  d="M4 9C4 6.24 6.24 4 9 4s5 2.24 5 5-2.24 5-5 5"
-                  stroke="#fff"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M9 14c2.76 0 5-2.24 5-5S11.76 4 9 4"
-                  stroke="#fff"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeOpacity="0.45"
-                />
-                <circle cx="4" cy="9" r="1.5" fill="#fff" />
-                <circle cx="14" cy="9" r="1.5" fill="#fff" fillOpacity="0.45" />
-              </svg>
-            </span>
-            <span className="text-[19px] font-extrabold tracking-[-0.4px]">
-              <span className="text-white">Sewa</span>
-              <span className="text-amber-400">Link</span>
-            </span>
-          </Link>
-
-          {/* Overline */}
-          <p className="mb-2.5 text-[9.5px] font-bold uppercase tracking-[1.8px] text-amber-500">
-            Home Services Marketplace
-          </p>
-
-          {/* Headline */}
-          <h1 className="mb-3 text-[30px] font-extrabold leading-[1.18] tracking-[-0.7px] text-white">
-            Book skilled<br />
-            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-              local experts
-            </span>
-            <br />
-            in minutes.
-          </h1>
-
-          {/* Subtext */}
-          <p className="mb-5 max-w-[320px] text-[12.5px] leading-relaxed text-white/[0.38]">
-            SewaLink connects you with verified, background-checked professionals for every home service need — fast, safe, and transparent.
-          </p>
-
-          {/* Service chips */}
-          <div className="flex flex-wrap gap-1.5">
-            {CHIPS.map((c) => (
-              <span
-                key={c.label}
-                className="inline-flex cursor-default items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/60 transition-all duration-200 hover:border-amber-400/35 hover:bg-amber-400/[0.07] hover:text-amber-300"
-              >
-                {c.icon} {c.label}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── BOTTOM: Stats + testimonial ── */}
-        <div className="relative z-10">
-          {/* Stats row */}
-          <div className="mb-5 flex gap-8 border-t border-white/[0.06] pt-4">
-            {[
-              { val: "12K+", lbl: "Verified experts" },
-              { val: "98%",  lbl: "Satisfaction rate" },
-              { val: "3 min", lbl: "Avg. booking time" },
-            ].map((s) => (
-              <div key={s.lbl}>
-                <div className="text-[15px] font-extrabold text-white">{s.val}</div>
-                <div className="text-[10px] text-white/30">{s.lbl}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Testimonial card */}
-          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.04] p-4 backdrop-blur-sm">
-            {/* Stars */}
-            <div className="mb-2 flex gap-0.5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <svg key={i} width="11" height="11" viewBox="0 0 12 12" fill="#f59e0b">
-                  <path d="M6 1l1.39 2.82L10.5 4.27l-2.25 2.19.53 3.09L6 8.02 3.22 9.55l.53-3.09L1.5 4.27l3.11-.45L6 1z" />
-                </svg>
-              ))}
+      <div className="w-full max-w-[960px] bg-[#090d16] border border-white/10 rounded-[28px] overflow-hidden grid grid-cols-1 md:grid-cols-2 shadow-2xl shadow-black/60">
+        
+        {/* Left Panel - Corporate Branding Information */}
+        <section className="bg-black/20 p-10 flex flex-col justify-between border-r border-white/5 relative">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-xl flex items-center shadow-lg shadow-blue-500/10">
+              <Wrench size={18} className="text-white" strokeWidth={2.5} />
             </div>
-            <p className="mb-3 text-[11.5px] italic leading-relaxed text-white/45">
-              "Found a reliable plumber within 10 minutes. The whole process was seamless — booking, payment, everything."
+            <span className="text-xl font-black tracking-tight">
+              Kamdar<span className="text-orange-500">Nepal</span>
+            </span>
+          </div>
+
+          <div className="my-auto py-10 text-left">
+            <span className="inline-flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1 text-[10px] font-extrabold tracking-wider text-blue-400 mb-6 uppercase">
+              <Layers size={11} /> Verified Workforce Network
+            </span>
+            <h1 className="text-3xl font-black tracking-tight text-white leading-tight mb-4">
+              Nepal&apos;s premier network for <span className="text-orange-500">verified</span> local workforce.
+            </h1>
+            <p className="text-white/40 text-sm leading-relaxed">
+              Connecting homes, offices, and construction sites with skilled professionals instantly. Your trusted on-demand ecosystem for smarter, hassle-free local labor hire across Nepal.
             </p>
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-white">
-                RK
-              </span>
-              <div>
-                <div className="text-[11px] font-semibold text-white/50">Rajesh K.</div>
-                <div className="text-[10px] text-white/25">Homeowner, Kathmandu</div>
-              </div>
-            </div>
           </div>
-        </div>
-      </div>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          RIGHT PANEL
-      ══════════════════════════════════════════════════════════════════ */}
-      <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#060810] px-6 py-12 sm:px-10">
+          <div className="text-xs text-white/20 font-medium text-left">
+            Clean Architecture Compliance © 2026
+          </div>
+        </section>
 
-        {/* Top accent */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
-
-        <div className="w-full max-w-[380px]">
-
-          {/* Mobile logo */}
-          <Link href="/" className="mb-8 inline-flex items-center gap-2 no-underline lg:hidden">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gradient-to-br from-amber-400 to-orange-500 text-[13px] font-black text-white">S</span>
-            <span className="text-[17px] font-extrabold">
-              <span className="text-white">Sewa</span>
-              <span className="text-amber-400">Link</span>
-            </span>
-          </Link>
-
-          {showSuccess ? (
-            /* ── SUCCESS STATE ─────────────────────────────────────────── */
-            <div className="flex flex-col items-center gap-3.5 py-5 text-center animate-fade-in-up">
-              <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-amber-500/25 bg-amber-500/[0.12]">
-                <CheckCircle2 size={28} className="text-amber-400" />
+        {/* Right Panel - Core Multi-step Registration Form */}
+        <section className="p-10 flex flex-col justify-center text-left">
+          {success ? (
+            <div className="py-12 text-center flex flex-col items-center justify-center gap-4">
+              <div className="bg-emerald-500/10 p-5 rounded-full border border-emerald-500/20 text-emerald-400">
+                <CheckCircle2 size={40} />
               </div>
-              <div>
-                <h2 className="text-[20px] font-extrabold text-white">Account created!</h2>
-                <p className="mt-1 text-[12.5px] text-white/35">
-                  Welcome to SewaLink. Redirecting you to your dashboard…
-                </p>
-              </div>
-              <Link
-                href="/dashboard"
-                className="mt-1 inline-flex items-center gap-2 rounded-[11px] bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-2.5 text-[13px] font-bold text-black shadow-[0_4px_20px_rgba(245,158,11,0.28)] transition-all duration-200 hover:opacity-90 hover:-translate-y-px no-underline"
-              >
-                Go to dashboard <ArrowRight size={14} />
-              </Link>
+              <h3 className="text-xl font-black text-white tracking-tight">Onboarding Process Initiated</h3>
+              <p className="text-sm text-white/40 max-w-xs">Your credential tokens have been successfully synchronized inside the active Neon Node cluster.</p>
             </div>
           ) : (
-            /* ── FORM ──────────────────────────────────────────────────── */
-            <>
-              {/* Heading */}
-              <h2 className="mb-1 text-[22px] font-extrabold tracking-tight text-white">
-                Create your account
-              </h2>
-              <p className="mb-5 text-[12px] text-white/35">
-                Join the SewaLink marketplace — it takes under a minute.
-              </p>
-
-              {/* Role toggle */}
-              <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl border border-white/[0.07] bg-white/[0.04] p-1">
-                {(["CUSTOMER", "PROVIDER"] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, role: r }))}
-                    className={`rounded-[9px] py-2 text-[12px] font-semibold transition-all duration-200 ${
-                      form.role === r
-                        ? "bg-amber-500 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
-                        : "text-white/35 hover:text-white/60"
-                    }`}
-                  >
-                    {r === "CUSTOMER" ? "I need help" : "I offer services"}
-                  </button>
-                ))}
+            <div className="flex flex-col gap-5">
+              <div>
+                <h2 className="text-2xl font-extrabold tracking-tight text-white mb-1">Create Account</h2>
+                <p className="text-white/40 text-xs">Access the high-fidelity secure service layer.</p>
               </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              {/* Identity Selector Tabs */}
+              <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+                <button
+                  type="button"
+                  onClick={() => { setUserType("customer"); setApiError(""); }}
+                  className={`flex-1 flex items-center justify-center gap-2 h-9 border-none rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 ${
+                    userType === "customer" ? "bg-blue-600 text-white shadow-md" : "bg-transparent text-white/50 hover:text-white"
+                  }`}
+                >
+                  <User size={13} /> Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUserType("worker"); setApiError(""); }}
+                  className={`flex-1 flex items-center justify-center gap-2 h-9 border-none rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 ${
+                    userType === "worker" ? "bg-orange-500 text-[#03050a] shadow-md" : "bg-transparent text-white/50 hover:text-white"
+                  }`}
+                >
+                  <Briefcase size={13} /> Kamdar
+                </button>
+              </div>
 
-                {/* First + Last name */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="First name">
-                    <div className="relative">
-                      <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                      <input
-                        value={form.firstName}
-                        onChange={set("firstName")}
-                        placeholder="Aarav"
-                        className={inputCls("pl-9 pr-3")}
-                      />
-                    </div>
-                  </Field>
-                  <Field label="Last name">
-                    <div className="relative">
-                      <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                      <input
-                        value={form.lastName}
-                        onChange={set("lastName")}
-                        placeholder="Sharma"
-                        className={inputCls("pl-9 pr-3")}
-                      />
-                    </div>
-                  </Field>
+              {apiError && (
+                <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-medium flex items-center gap-2.5">
+                  <ShieldAlert size={16} className="shrink-0" />
+                  <span>{apiError}</span>
                 </div>
+              )}
 
-                {/* Email */}
-                <Field label="Email address">
-                  <div className="relative">
-                    <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={set("email")}
-                      placeholder="you@example.com"
-                      className={inputCls("pl-9 pr-3")}
-                    />
-                  </div>
-                </Field>
-
-                {/* Phone */}
-                <Field label="Phone number">
-                  <div className="relative">
-                    <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={set("phone")}
-                      placeholder="+977 98XXXXXXXX"
-                      className={inputCls("pl-9 pr-3")}
-                    />
-                  </div>
-                </Field>
-
-                {/* Password */}
-                <Field label="Create password">
-                  <div className="relative">
-                    <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={form.password}
-                      onChange={set("password")}
-                      placeholder="Min. 8 characters"
-                      className={inputCls("pl-9 pr-10")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors duration-200"
-                      tabIndex={-1}
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+                {/* Dynamic Professional Skill Selector Window */}
+                {userType === "worker" && (
+                  <div className="flex flex-col gap-1.5 relative" ref={dropdownRef}>
+                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Professional Trade / Skill</label>
+                    <div 
+                      onClick={() => setIsOpen(!isOpen)}
+                      className="w-full h-11 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between px-4 text-xs text-slate-300 cursor-pointer hover:border-white/20 transition-colors"
                     >
-                      {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                    </button>
-                  </div>
-                </Field>
+                      <span>{skill ? skillsList.find(s => s.value === skill)?.label : "-- कुन काम गर्नुहुन्छ छान्नुहोस् --"}</span>
+                      <ChevronDown size={14} className="text-white/40" />
+                    </div>
 
-                {/* Terms */}
-                <p className="my-1 text-center text-[10.5px] text-white/20">
-                  By creating an account you agree to our{" "}
-                  <Link href="#" className="text-amber-400/65 no-underline hover:text-amber-400 transition-colors">
-                    Terms
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="#" className="text-amber-400/65 no-underline hover:text-amber-400 transition-colors">
-                    Privacy Policy
-                  </Link>
-                  .
-                </p>
-
-                {/* Error */}
-                {error && (
-                  <div className="rounded-xl border border-red-500/[0.18] bg-red-500/[0.08] px-3 py-2.5 text-[11.5px] text-red-300">
-                    {error}
+                    {isOpen && (
+                      <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-[#0d121f] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl">
+                        {skillsList.map((item) => (
+                          <div
+                            key={item.value}
+                            onClick={() => { setSkill(item.value); setIsOpen(false); setApiError(""); }}
+                            className="px-4 py-3 text-xs text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-colors border-b border-white/5 last:border-none"
+                          >
+                            {item.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Submit */}
-                <button
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">First Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Ram"
+                      value={form.firstName}
+                      onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl px-4 text-xs text-white outline-none transition-all ${
+                        errors.firstName ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Last Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Bahadur"
+                      value={form.lastName}
+                      onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl px-4 text-xs text-white outline-none transition-all ${
+                        errors.lastName ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Email Address</label>
+                  <div className="relative">
+                    <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={form.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-4 text-xs text-white outline-none transition-all ${
+                        errors.email ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Phone Number (Nepal)</label>
+                  <div className="relative">
+                    <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input
+                      type="text"
+                      placeholder="98XXXXXXXX"
+                      maxLength={10}
+                      value={form.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-4 text-xs text-white outline-none transition-all ${
+                        errors.phone ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Password Context</label>
+                  <div className="relative">
+                    <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Min 8 characters securely hashed"
+                      value={form.password}
+                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-11 text-xs text-white outline-none transition-all ${
+                        errors.password ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-none border-none text-white/30 hover:text-white cursor-pointer p-0"
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 mt-1 cursor-pointer" onClick={() => setAgreeTerms(!agreeTerms)}>
+                  <input
+                    type="checkbox"
+                    checked={agreeTerms}
+                    onChange={() => {}}
+                    className="mt-0.5 h-3.5 w-3.5 rounded border-white/10 bg-slate-950 accent-blue-600 cursor-pointer"
+                  />
+                  <span className="text-[11px] text-white/50 leading-tight">
+                    I explicitly consent and agree to the system Terms of Service and secure Privacy Policy Parameters.
+                  </span>
+                </div>
+
+                <Button
                   type="submit"
-                  disabled={isLoading}
-                  className={`flex w-full items-center justify-center gap-2 rounded-[11px] bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-[13px] font-bold text-black shadow-[0_4px_20px_rgba(245,158,11,0.28)] transition-all duration-200 hover:opacity-90 hover:-translate-y-px active:scale-[0.98] ${
-                    isLoading ? "cursor-not-allowed opacity-70" : ""
+                  disabled={loading}
+                  className={`w-full h-11 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 border-none select-none disabled:opacity-50 mt-2 ${
+                    userType === "worker"
+                      ? "bg-orange-500 hover:bg-orange-600 text-[#03050a]"
+                      : "bg-blue-600 hover:bg-blue-500 text-white"
                   }`}
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      Creating account…
-                    </>
-                  ) : (
-                    <>
-                      Create Account
-                      <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-                    </>
-                  )}
-                </button>
-              </form>
+                  {loading
+                    ? "Processing Pipelines..."
+                    : userType === "worker"
+                    ? "Join as Professional Workforce →"
+                    : "Create Consumer Account →"}
+                </Button>
 
-              {/* Sign in link */}
-              <p className="mt-3.5 text-center text-[11.5px] text-white/25">
-                Already have an account?{" "}
-                <Link href="/login" className="font-semibold text-amber-400/75 no-underline hover:text-amber-400 transition-colors duration-200">
-                  Sign in
-                </Link>
-              </p>
-
-              {/* Social proof */}
-              <div className="mt-3.5 flex items-center justify-center gap-2.5 border-t border-white/[0.05] pt-3.5">
-                <div className="flex items-center">
-                  {AVATAR_GRADIENTS.map((g, i) => (
-                    <span
-                      key={i}
-                      className={`flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#060810] bg-gradient-to-br ${g} text-[9px] font-bold text-white ${i > 0 ? "-ml-1.5" : ""}`}
-                    >
-                      {AVATAR_INITIALS[i]}
-                    </span>
-                  ))}
+                <div className="text-center text-xs text-white/40 mt-1">
+                  Already have an identity token?{" "}
+                  <Link href="/login" className="text-blue-400 font-bold hover:underline">
+                    Sign in context
+                  </Link>
                 </div>
-                <p className="text-[10.5px] text-white/[0.22]">
-                  Join <span className="font-bold text-white/40">2,400+</span> early members
-                </p>
-              </div>
-            </>
+              </form>
+            </div>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

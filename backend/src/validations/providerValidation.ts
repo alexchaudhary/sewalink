@@ -89,10 +89,10 @@ export const validateProviderQuery = (req: Request, res: Response, next: NextFun
       return res.status(400).json({
         success: false,
         message: "Query compilation validation failed.",
-        errors: error.errors.map((e) => ({
-          field: e.path.join("."),
-          issue: e.message,
-        })),
+       errors: error.issues.map((e) => ({
+      field: e.path.join("."),
+  issue: e.message,
+})),
       });
     }
 

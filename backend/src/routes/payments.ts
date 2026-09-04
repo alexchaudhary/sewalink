@@ -1,22 +1,20 @@
-import express, { Router } from "express";
-import { createCheckoutSession, handleWebhook } from "../controllers/paymentController";
-import { requireAuth } from "../middleware/auth";
-import { validate } from "../middleware/validate";
-import { checkoutSessionSchema } from "../validations/paymentValidation";
+import { Router } from "express";
+import { authMiddleware } from "../middleware/auth";
+import {
+  createCheckoutSession,
+  handleWebhook,
+} from "../controllers/paymentController";
 
 const router = Router();
 
-router.post(
-  "/checkout",
-  requireAuth,
-  validate(checkoutSessionSchema),
-  createCheckoutSession
-);
+// Stripe webhook does NOT use JWT authentication
+router.post("/webhook", handleWebhook as any);
 
+// Customer payment requires authentication
 router.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  handleWebhook
+  "/process",
+  authMiddleware as any,
+  createCheckoutSession as any
 );
 
 export default router;
