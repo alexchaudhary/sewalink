@@ -41,7 +41,7 @@ export default function ProviderDetail() {
   // Fetch Provider Record Nodes
   useEffect(() => {
     if (!id) return;
-    fetcher(`/api/providers/${id}`)
+    fetcher(`/providers/${id}`)
       .then((res) => {
         const realProvider = res?.data?.provider || res?.provider || null;
         if (realProvider) {

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  Wrench, 
-  LogOut, 
-  Bell, 
-  Droplet, 
-  Zap, 
-  Hammer, 
-  Paintbrush, 
-  Sparkles, 
+import {
+  Wrench,
+  LogOut,
+  Bell,
+  Droplet,
+  Zap,
+  Hammer,
+  Paintbrush,
+  Sparkles,
   MapPin,
   Phone,
   AlertCircle,
@@ -25,9 +25,66 @@ import {
   Briefcase
 } from 'lucide-react';
 
+type WorkerStatus = 'Completed' | 'In Progress' | 'Requested';
+
+type ChatSender = 'worker' | 'user';
+
+interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  avatar: string;
+  isVerified: boolean;
+}
+
+interface ServiceProvider {
+  id: number;
+  name: string;
+  phone: string;
+  location: string;
+  category: string;
+  skill?: string;
+  rating: number | null;
+  hasRated: boolean;
+  jobsDone: number;
+  rate: string;
+  avatar: string;
+  verified?: boolean;
+  bio: string;
+}
+
+interface HiredWorker extends ServiceProvider {
+  skill: string;
+  hireCount: number;
+  status: WorkerStatus;
+  date: string;
+}
+
+interface Review {
+  id: number;
+  workerName: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
+interface ChatMessage {
+  sender: ChatSender;
+  text: string;
+}
+
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
+
 export default function Dashboard() {
   // --- USER STATE ---
-  const [user, setUser] = useState({
+  const [user, setUser] = useState<UserProfile>({
     name: 'Aayush Maharjan',
     email: 'aayush@example.com',
     phone: '9841234567',
@@ -37,27 +94,27 @@ export default function Dashboard() {
   });
 
   // --- NAVIGATION & VIEW STATES ---
-  const [currentView, setCurrentView] = useState('dashboard'); 
-  const [activeTab, setActiveTab] = useState('hired'); 
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('hired');
 
   // --- BUSINESS LOGIC & DATA STATES ---
-  const [hiredWorkers, setHiredWorkers] = useState([
+  const [hiredWorkers, setHiredWorkers] = useState<HiredWorker[]>([
     { id: 101, name: 'Ramesh Thapa', phone: '9812345678', location: 'Patan, Lalitpur', skill: 'Senior Plumber', category: 'Plumbing', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80', hireCount: 5, rating: 4.8, hasRated: true, status: 'Completed', date: '2026-08-20', rate: 'Rs. 700/hr', jobsDone: 142, bio: 'Expert plumber with over 8 years of experience fixing leaks, pipe installation, and bathroom fixtures in Lalitpur area.' },
     { id: 102, name: 'Suman Shrestha', phone: '9823456789', location: 'Jawalakhel, Lalitpur', skill: 'Master Electrician', category: 'Electrical', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&h=150&q=80', hireCount: 3, rating: 4.9, hasRated: true, status: 'In Progress', date: '2026-08-26', rate: 'Rs. 900/hr', jobsDone: 98, bio: 'Certified electrical systems technician specializing in house rewiring, generator repairs, and smart lighting installation.' }
   ]);
-  
-  const [favoriteWorkers, setFavoriteWorkers] = useState([
+
+  const [favoriteWorkers, setFavoriteWorkers] = useState<ServiceProvider[]>([
     { id: 103, name: 'Bijay Maharjan', phone: '9834567890', location: 'Mangal Bazaar, Lalitpur', category: 'Carpentry', rating: 4.7, hasRated: true, jobsDone: 64, rate: 'Rs. 800/hr', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&h=150&q=80', verified: true, bio: 'Custom woodwork and furniture repairing specialist.' }
   ]);
 
-  const [activeReviews, setActiveReviews] = useState([
+  const [activeReviews, setActiveReviews] = useState<Review[]>([
     { id: 1, workerName: 'Ramesh Thapa', rating: 5, comment: 'Did an exceptional plumbing fix in our kitchen. Highly professional!', date: '2 days ago' }
   ]);
 
   // --- MARKETPLACE PROVIDERS DIRECTORY STATE ---
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [availableProviders, setAvailableProviders] = useState([
+  const [availableProviders, setAvailableProviders] = useState<ServiceProvider[]>([
     { id: 101, name: 'Ramesh Thapa', phone: '9812345678', category: 'Plumbing', rating: 4.8, hasRated: true, jobsDone: 142, rate: 'Rs. 700/hr', location: 'Patan, Lalitpur', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80', verified: true, bio: 'Expert plumber with over 8 years of experience fixing leaks, pipe installation, and bathroom fixtures in Lalitpur area.' },
     { id: 102, name: 'Suman Shrestha', phone: '9823456789', category: 'Electrical', rating: 4.9, hasRated: true, jobsDone: 98, rate: 'Rs. 900/hr', location: 'Jawalakhel, Lalitpur', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&h=150&q=80', verified: true, bio: 'Certified electrical systems technician specializing in house rewiring, generator repairs, and smart lighting installation.' },
     { id: 103, name: 'Bijay Maharjan', phone: '9834567890', category: 'Carpentry', rating: 4.7, hasRated: true, jobsDone: 64, rate: 'Rs. 800/hr', location: 'Mangal Bazaar, Lalitpur', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&h=150&q=80', verified: true, bio: 'Custom woodwork and furniture repairing specialist.' },
@@ -68,22 +125,22 @@ export default function Dashboard() {
   // --- MODALS & INTERACTIONS STATE ---
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isProfileDetailModalOpen, setIsProfileDetailModalOpen] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('');
   const [bookingNote, setBookingNote] = useState('');
 
   // Chat Modal State
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [activeChatWorker, setActiveChatWorker] = useState(null);
-  const [chatMessages, setChatMessages] = useState([
+  const [activeChatWorker, setActiveChatWorker] = useState<ServiceProvider | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { sender: 'worker', text: 'Namaste! How can I help you with your maintenance needs today?' }
   ]);
   const [newMessage, setNewMessage] = useState('');
 
   // Notification Drawer State
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
+  const [notifications, setNotifications] = useState<Notification[]>([
     { id: 1, title: 'Booking Confirmed', message: 'Suman Shrestha accepted your electrical maintenance request.', time: '10m ago', read: false },
     { id: 2, title: 'Payment Success', message: 'Payment of Rs. 1,500 completed for Ramesh Thapa.', time: '1d ago', read: true }
   ]);
@@ -93,29 +150,33 @@ export default function Dashboard() {
   const [tempPhone, setTempPhone] = useState(user.phone);
   const [tempLocation, setTempLocation] = useState(user.location);
   const [tempAvatar, setTempAvatar] = useState(user.avatar);
-  const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'url'
+  const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file'); // 'file' | 'url'
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('Profile updated successfully!');
   const [phoneError, setPhoneError] = useState('');
 
-  const triggerToast = (msg) => {
+  const triggerToast = (msg:string) => {
     setToastMessage(msg);
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 4000);
   };
+const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
 
-  const handleImageFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
+  if (file) {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
         setTempAvatar(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+      }
+    };
 
-  const handleSaveProfile = (e) => {
+    reader.readAsDataURL(file);
+  }
+};
+
+  const handleSaveProfile = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (tempPhone && !/^(98|97)\d{8}$/.test(tempPhone)) {
       setPhoneError('Please enter a valid Nepalese mobile number (e.g., 98xxxxxxxx)');
@@ -139,46 +200,51 @@ export default function Dashboard() {
     }
   };
 
-  const handleOpenProviderDetail = (provider) => {
-    setSelectedProvider(provider);
-    setIsProfileDetailModalOpen(true);
+  const handleOpenProviderDetail = (provider: ServiceProvider) => {
+  setSelectedProvider(provider);
+  setIsProfileDetailModalOpen(true);
+};
+
+  const handleOpenBooking = (provider: ServiceProvider) => {
+  setSelectedProvider(provider);
+  setIsProfileDetailModalOpen(false);
+  setIsBookingModalOpen(true);
+};
+
+const handleConfirmBooking = (
+  e: React.FormEvent<HTMLFormElement>
+) => {
+  e.preventDefault();
+
+  if (!selectedProvider) return;
+
+  const provider = selectedProvider;
+
+  setAvailableProviders(prev => prev.map(p => {
+    if (p.id === provider.id) {
+      return { ...p, jobsDone: p.jobsDone + 1 };
+    }
+    return p;
+  }));
+
+  const newHired: HiredWorker = {
+    id: provider.id || Date.now(),
+    name: provider.name,
+    phone: provider.phone,
+    location: provider.location,
+   skill: (provider.category || 'General') + ' Expert',
+    category: provider.category || 'Maintenance',
+    avatar: provider.avatar,
+    hireCount: 1,
+    rating: provider.rating ?? 5.0,
+    hasRated: true,
+    status: 'Requested',
+    date: bookingDate || new Date().toISOString().split('T')[0],
+    rate: provider.rate,
+    jobsDone: provider.jobsDone || 10,
+    bio: provider.bio || 'Experienced artisan.'
   };
 
-  const handleOpenBooking = (provider) => {
-    setSelectedProvider(provider);
-    setIsProfileDetailModalOpen(false);
-    setIsBookingModalOpen(true);
-  };
-
-  const handleConfirmBooking = (e) => {
-    e.preventDefault();
-    if (!selectedProvider) return;
-
-    setAvailableProviders(prev => prev.map(p => {
-      if (p.id === selectedProvider.id) {
-        return { ...p, jobsDone: p.jobsDone + 1 };
-      }
-      return p;
-    }));
-
-    const newHired = {
-      id: selectedProvider.id || Date.now(),
-      name: selectedProvider.name,
-      phone: selectedProvider.phone,
-      location: selectedProvider.location,
-      skill: (selectedProvider.category || selectedProvider.skill || 'General') + ' Expert',
-      category: selectedProvider.category || 'Maintenance',
-      avatar: selectedProvider.avatar,
-      hireCount: 1,
-      rating: selectedProvider.rating || 5.0,
-      hasRated: true,
-      status: 'Requested',
-      date: bookingDate || new Date().toISOString().split('T')[0],
-      rate: selectedProvider.rate,
-      jobsDone: selectedProvider.jobsDone || 10,
-      bio: selectedProvider.bio || 'Experienced artisan.'
-    };
-    
     // Filter existing duplicate if re-booking
     const filteredHired = hiredWorkers.filter(w => w.id !== newHired.id);
     setHiredWorkers([newHired, ...filteredHired]);
@@ -188,23 +254,29 @@ export default function Dashboard() {
     setBookingDate('');
     setBookingTime('');
     setBookingNote('');
-    triggerToast(`Successfully dispatched booking request to ${selectedProvider.name}!`);
+    triggerToast(`Successfully dispatched booking request to ${provider.name}!`);
     setCurrentView('dashboard');
     setActiveTab('hired');
   };
 
-  const handleToggleFavorite = (provider) => {
-    const exists = favoriteWorkers.some(fav => fav.id === provider.id);
+  const handleToggleFavorite = (provider: ServiceProvider) => {
+  const exists = favoriteWorkers.some(fav => fav.id === provider.id);
     if (exists) {
-      setFavoriteWorkers(favoriteWorkers.filter(fav => fav.id !== provider.id));
+      setFavoriteWorkers(prev => prev.filter(fav => fav.id !== provider.id));
       triggerToast(`Removed ${provider.name} from favorites.`);
     } else {
-      setFavoriteWorkers([...favoriteWorkers, provider]);
+      setFavoriteWorkers(prev => [
+        ...prev,
+        {
+          ...provider,
+          rating: provider.rating ?? 5.0
+        }
+      ]);
       triggerToast(`Added ${provider.name} to favorites!`);
     }
   };
 
-  const handleOpenChat = (worker) => {
+  const handleOpenChat = (worker: ServiceProvider) => {
     setActiveChatWorker(worker);
     setChatMessages([
       { sender: 'worker', text: `Namaste! This is ${worker.name}. How can I assist you?` }
@@ -212,11 +284,11 @@ export default function Dashboard() {
     setIsChatOpen(true);
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    const userMsg = { sender: 'user', text: newMessage };
+    const userMsg: ChatMessage = { sender: 'user', text: newMessage };
     setChatMessages(prev => [...prev, userMsg]);
     const currentInput = newMessage;
     setNewMessage('');
@@ -239,7 +311,7 @@ export default function Dashboard() {
 
   const filteredProviders = availableProviders.filter(provider => {
     const matchesCategory = selectedCategory === 'All' || provider.category.toLowerCase() === selectedCategory.toLowerCase();
-    const matchesSearch = provider.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           provider.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           provider.category.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -249,7 +321,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative">
-      
+
       {/* Dynamic Toast Notification */}
       {showSuccessToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-950/95 border border-emerald-500 text-emerald-200 px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 backdrop-blur-md animate-bounce">
@@ -260,8 +332,8 @@ export default function Dashboard() {
 
       {/* --- TOP NAVIGATION BAR --- */}
       <header className="border-b border-slate-800/60 bg-[#07090e]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-        <div 
-          onClick={() => setCurrentView('dashboard')} 
+        <div
+          onClick={() => setCurrentView('dashboard')}
           className="flex items-center space-x-3 cursor-pointer group"
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
@@ -274,14 +346,14 @@ export default function Dashboard() {
 
         <div className="flex items-center space-x-4">
           {currentView === 'explore' ? (
-            <button 
+            <button
               onClick={() => setCurrentView('dashboard')}
               className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl font-medium transition-all"
             >
               ← Back to Dashboard
             </button>
           ) : (
-            <button 
+            <button
               onClick={() => setCurrentView('explore')}
               className="text-xs bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-xl shadow-lg shadow-blue-600/25 transition-all flex items-center space-x-2"
             >
@@ -292,7 +364,7 @@ export default function Dashboard() {
 
           {/* Notifications Dropdown */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => {
                 setIsNotificationOpen(!isNotificationOpen);
                 setNotifications(notifications.map(n => ({ ...n, read: true })));
@@ -309,7 +381,7 @@ export default function Dashboard() {
               <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <h3 className="text-sm font-bold text-white">Notifications</h3>
-                  <button 
+                  <button
                     onClick={() => setNotifications([])}
                     className="text-[11px] text-slate-400 hover:text-red-400 transition-colors"
                   >
@@ -335,7 +407,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <button 
+          <button
             onClick={handleLogout}
             className="flex items-center space-x-2 text-sm font-medium text-red-400 hover:text-red-300 bg-red-950/20 border border-red-900/30 px-3.5 py-2 rounded-xl transition-all"
           >
@@ -363,7 +435,7 @@ export default function Dashboard() {
                     <p className="text-xs text-slate-400 mt-0.5">Please add your phone number and service location so artisans can reach you accurately.</p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     setTempPhone(user.phone);
                     setTempLocation(user.location);
@@ -380,13 +452,13 @@ export default function Dashboard() {
             {/* Customer Account Banner */}
             <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-[#10141f] to-slate-900 border border-slate-800/80 p-6 sm:p-8 shadow-2xl shadow-black/40">
               <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-              
+
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
                 <div className="flex items-center space-x-5">
                   <div className="relative">
-                    <img 
-                      src={user.avatar} 
-                      alt={user.name} 
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
                       className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-blue-500/40 shadow-xl"
                     />
                     {user.isVerified && (
@@ -413,7 +485,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center space-x-3 w-full md:w-auto">
-                  <button 
+                  <button
                     onClick={() => {
                       setTempPhone(user.phone);
                       setTempLocation(user.location);
@@ -424,7 +496,7 @@ export default function Dashboard() {
                   >
                     Edit Profile
                   </button>
-                  <button 
+                  <button
                     onClick={() => setCurrentView('explore')}
                     className="flex-1 md:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs px-6 py-3 rounded-xl shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center space-x-2"
                   >
@@ -496,8 +568,8 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     hiredWorkers.map(worker => (
-                      <div 
-                        key={worker.id} 
+                      <div
+                        key={worker.id}
                         onClick={() => handleOpenProviderDetail(worker)}
                         className="bg-slate-900/80 border border-slate-800/80 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:border-blue-500/60 hover:shadow-blue-500/10 cursor-pointer transition-all group"
                       >
@@ -510,7 +582,7 @@ export default function Dashboard() {
                                 <span className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md font-medium">View Profile</span>
                               </div>
                               <p className="text-xs text-blue-400 font-medium">{worker.skill}</p>
-                              
+
                               <div className="flex items-center space-x-3 mt-1.5 text-xs text-slate-300">
                                 <span className="flex items-center space-x-1 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/50">
                                   <Phone className="w-3 h-3 text-emerald-400" />
@@ -543,14 +615,14 @@ export default function Dashboard() {
                           </div>
 
                           <div className="flex items-center space-x-2">
-                            <button 
+                            <button
                               onClick={() => handleOpenChat(worker)}
                               className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 border border-slate-700/60"
                             >
                               <MessageSquare className="w-3.5 h-3.5" />
                               <span>Chat</span>
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleOpenBooking(worker)}
                               className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3.5 py-2 rounded-xl transition-all shadow-md"
                             >
@@ -589,14 +661,14 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <button 
+                          <button
                             onClick={() => handleOpenChat(fav)}
                             className="p-2.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all"
                             title="Chat with Artisan"
                           >
                             <MessageSquare className="w-4 h-4" />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleOpenBooking(fav)}
                             className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-all"
                           >
@@ -637,11 +709,11 @@ export default function Dashboard() {
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-4 rounded-3xl">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, skill, or location in Lalitpur..." 
+                  placeholder="Search by name, skill, or location in Lalitpur..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-all"
                 />
               </div>
@@ -652,8 +724,8 @@ export default function Dashboard() {
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
                     className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                      selectedCategory === cat 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+                      selectedCategory === cat
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                         : 'bg-slate-800/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                     }`}
                   >
@@ -673,8 +745,8 @@ export default function Dashboard() {
                 filteredProviders.map(provider => {
                   const isFav = favoriteWorkers.some(f => f.id === provider.id);
                   return (
-                    <div 
-                      key={provider.id} 
+                    <div
+                      key={provider.id}
                       className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-2xl relative hover:border-blue-500/50 transition-all cursor-pointer group"
                       onClick={() => handleOpenProviderDetail(provider)}
                     >
@@ -697,14 +769,14 @@ export default function Dashboard() {
                             </p>
                           </div>
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleFavorite(provider);
                           }}
                           className={`p-2.5 rounded-2xl border transition-all ${
-                            isFav 
-                              ? 'bg-red-500/10 border-red-500/30 text-red-500' 
+                            isFav
+                              ? 'bg-red-500/10 border-red-500/30 text-red-500'
                               : 'bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-red-400'
                           }`}
                         >
@@ -740,14 +812,14 @@ export default function Dashboard() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 pt-1" onClick={(e) => e.stopPropagation()}>
-                        <button 
+                        <button
                           onClick={() => handleOpenChat(provider)}
                           className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs py-3 rounded-2xl transition-all border border-slate-700/60 flex items-center justify-center space-x-1.5"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                           <span>Chat Now</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleOpenBooking(provider)}
                           className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-3 rounded-2xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-1.5"
                         >
@@ -782,7 +854,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsProfileDetailModalOpen(false)}
                 className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
               >
@@ -817,7 +889,7 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <button 
+                <button
                   onClick={() => {
                     setIsProfileDetailModalOpen(false);
                     handleOpenChat(selectedProvider);
@@ -827,7 +899,7 @@ export default function Dashboard() {
                   <MessageSquare className="w-4 h-4" />
                   <span>Start Chat</span>
                 </button>
-                <button 
+                <button
                   onClick={() => handleOpenBooking(selectedProvider)}
                   className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-3.5 rounded-2xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-2"
                 >
@@ -852,7 +924,7 @@ export default function Dashboard() {
                   <p className="text-xs text-blue-400 font-medium">{selectedProvider.category || selectedProvider.skill} • {selectedProvider.rate}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsBookingModalOpen(false)}
                 className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
               >
@@ -861,19 +933,19 @@ export default function Dashboard() {
             </div>
 
             <form onSubmit={handleConfirmBooking} className="p-6 space-y-5">
-              
+
               {/* SERVICE DATE INPUT WITH RIGHT-ALIGNED VISIBLE ICON & PICKER TRIGGER */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-2">Service Date</label>
-                <div 
+                <div
                   className="relative flex items-center cursor-pointer"
                   onClick={(e) => {
                     const input = e.currentTarget.querySelector('input');
                     if (input && input.showPicker) input.showPicker();
                   }}
                 >
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     required
                     style={{ colorScheme: 'dark' }}
                     value={bookingDate}
@@ -887,15 +959,15 @@ export default function Dashboard() {
               {/* PREFERRED TIME INPUT WITH RIGHT-ALIGNED VISIBLE ICON & PICKER TRIGGER */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-2">Preferred Time</label>
-                <div 
+                <div
                   className="relative flex items-center cursor-pointer"
                   onClick={(e) => {
                     const input = e.currentTarget.querySelector('input');
                     if (input && input.showPicker) input.showPicker();
                   }}
                 >
-                  <input 
-                    type="time" 
+                  <input
+                    type="time"
                     required
                     style={{ colorScheme: 'dark' }}
                     value={bookingTime}
@@ -920,8 +992,8 @@ export default function Dashboard() {
                         type="button"
                         onClick={() => setBookingTime(slotValue)}
                         className={`py-2 text-[11px] font-bold rounded-xl border transition-all ${
-                          bookingTime === slotValue 
-                            ? 'bg-blue-600 border-blue-500 text-white shadow-md' 
+                          bookingTime === slotValue
+                            ? 'bg-blue-600 border-blue-500 text-white shadow-md'
                             : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white'
                         }`}
                       >
@@ -935,7 +1007,7 @@ export default function Dashboard() {
               {/* JOB NOTE */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-2">Job Description / Note</label>
-                <textarea 
+                <textarea
                   rows={3}
                   value={bookingNote}
                   onChange={(e) => setBookingNote(e.target.value)}
@@ -945,14 +1017,14 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsBookingModalOpen(false)}
                   className="w-full bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-bold text-xs py-3.5 rounded-2xl transition-all"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-3.5 rounded-2xl shadow-lg shadow-blue-600/30 transition-all"
                 >
@@ -979,7 +1051,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsChatOpen(false)}
                 className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-slate-800"
               >
@@ -989,13 +1061,13 @@ export default function Dashboard() {
 
             <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#07090e]">
               {chatMessages.map((msg, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-xs ${
-                    msg.sender === 'user' 
-                      ? 'bg-blue-600 text-white rounded-br-none' 
+                    msg.sender === 'user'
+                      ? 'bg-blue-600 text-white rounded-br-none'
                       : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700/60'
                   }`}>
                     {msg.text}
@@ -1005,14 +1077,14 @@ export default function Dashboard() {
             </div>
 
             <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-800 bg-slate-950 flex items-center space-x-2">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
                 className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
               />
-              <button 
+              <button
                 type="submit"
                 className="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-md transition-all shrink-0"
               >
@@ -1037,8 +1109,8 @@ export default function Dashboard() {
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Phone Number</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={tempPhone}
                   onChange={(e) => setTempPhone(e.target.value)}
                   placeholder="98xxxxxxxx"
@@ -1049,8 +1121,8 @@ export default function Dashboard() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Service Location</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={tempLocation}
                   onChange={(e) => setTempLocation(e.target.value)}
                   placeholder="e.g., Jawalakhel, Lalitpur"
@@ -1063,15 +1135,15 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-slate-300">Profile Image</label>
                   <div className="flex space-x-2 text-[10px]">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setUploadMode('file')}
                       className={`px-2 py-0.5 rounded-lg transition-all ${uploadMode === 'file' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
                     >
                       Local File
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setUploadMode('url')}
                       className={`px-2 py-0.5 rounded-lg transition-all ${uploadMode === 'url' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
                     >
@@ -1086,17 +1158,17 @@ export default function Dashboard() {
                     <label className="flex-1 bg-slate-950 border border-dashed border-slate-700 hover:border-blue-500 rounded-2xl p-3 text-center cursor-pointer transition-all flex items-center justify-center space-x-2 text-xs text-slate-300">
                       <Upload className="w-4 h-4 text-blue-400" />
                       <span>Upload from device</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
+                      <input
+                        type="file"
+                        accept="image/*"
                         onChange={handleImageFileChange}
-                        className="hidden" 
+                        className="hidden"
                       />
                     </label>
                   </div>
                 ) : (
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={tempAvatar}
                     onChange={(e) => setTempAvatar(e.target.value)}
                     placeholder="https://..."
@@ -1106,15 +1178,15 @@ export default function Dashboard() {
               </div>
 
               <div className="flex justify-end space-x-3 pt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setIsModalOpen(false)} 
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
                   className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold"
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30"
                 >
                   Save Profile
