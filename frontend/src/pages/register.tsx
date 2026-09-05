@@ -1,96 +1,171 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
+import { fetcher } from "@/lib/api";
 import {
+  Briefcase,
   CheckCircle2,
+  ChevronDown,
+  Eye,
+  EyeOff,
+  Layers,
   Lock,
   Mail,
   Phone,
+  ShieldAlert,
   User,
   Wrench,
-  Briefcase,
-  ShieldAlert,
-  Layers,
-  Eye,
-  EyeOff,
-  ChevronDown,
 } from "lucide-react";
+
+type UserType = "customer" | "worker";
+
+type RegisterForm = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+};
+
+type FormErrors = Partial<Record<keyof RegisterForm, string>>;
+
+const skillsList = [
+  { value: "painter", label: "Painter (पेन्टर)" },
+  { value: "electrician", label: "Electrician (इलेक्ट्रिसियन)" },
+  { value: "plumber", label: "Plumber (प्लम्बर)" },
+  { value: "carpenter", label: "Carpenter (कार्पेन्टर)" },
+  {
+    value: "construction",
+    label: "Construction Worker (मजदुर)",
+  },
+];
+
+const initialForm: RegisterForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  password: "",
+};
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    password: "",
-  });
-  const [userType, setUserType] = useState<"customer" | "worker">("customer");
+
+  const [form, setForm] = useState<RegisterForm>(initialForm);
+  const [userType, setUserType] = useState<UserType>("customer");
   const [skill, setSkill] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [apiError, setApiError] = useState("");
-
   const [isOpen, setIsOpen] = useState(false);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const skillsList = [
-    { value: "painter", label: "Painter (पेन्टर)" },
-    { value: "electrician", label: "Electrician (इलेक्ट्रिसियन)" },
-    { value: "plumber", label: "Plumber (प्लम्बर)" },
-    { value: "carpenter", label: "Carpenter (कार्पेन्टर)" },
-    { value: "construction", label: "Construction Worker (मजदुर)" },
-  ];
-
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
       }
-    }
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
-  const handleInputChange = (key: string, value: string) => {
-    setForm({ ...form, [key]: value });
-    setErrors({ ...errors, [key]: undefined });
+  const handleInputChange = (
+    key: keyof RegisterForm,
+    value: string
+  ) => {
+    setForm((previous) => ({
+      ...previous,
+      [key]: value,
+    }));
+
+    setErrors((previous) => ({
+      ...previous,
+      [key]: undefined,
+    }));
+
     setApiError("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors: Record<string, string> = {};
+  const handleUserTypeChange = (type: UserType) => {
+    setUserType(type);
+    setApiError("");
+    setErrors({});
+    setIsOpen(false);
 
-    if (!form.firstName.trim()) newErrors.firstName = "Required";
-    if (!form.lastName.trim()) newErrors.lastName = "Required";
-    if (!form.email.includes("@")) newErrors.email = "Invalid email";
+    if (type === "customer") {
+      setSkill("");
+    }
+  };
 
+  const validateForm = (): FormErrors => {
+    const newErrors: FormErrors = {};
+
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "First name is required.";
+    }
+
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Last name is required.";
+    }
+
+    const email = form.email.trim().toLowerCase();
+
+    if (!email) {
+      newErrors.email = "Email address is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address.";
+    }
+
+    const phone = form.phone.trim();
     const phoneRegex = /^(98|97)\d{8}$/;
-    if (!form.phone.trim()) {
-      newErrors.phone = "Required";
-    } else if (!phoneRegex.test(form.phone.trim())) {
-      newErrors.phone = "Must be valid Nepal number (98/97...)";
+
+    if (!phone) {
+      newErrors.phone = "Phone number is required.";
+    } else if (!phoneRegex.test(phone)) {
+      newErrors.phone =
+        "Enter a valid Nepal mobile number starting with 98 or 97.";
     }
 
-    if (form.password.length < 8) newErrors.password = "Min 8 chars";
-
-    if (!agreeTerms) {
-      setApiError("You must agree to the Terms of Service and Privacy Policy.");
-      return;
+    if (!form.password) {
+      newErrors.password = "Password is required.";
+    } else if (form.password.length < 8) {
+      newErrors.password = "Password must contain at least 8 characters.";
     }
+
+    return newErrors;
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setApiError("");
+
+    const newErrors = validateForm();
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      return;
+    }
+
+    if (!agreeTerms) {
+      setApiError(
+        "Please agree to the Terms of Service and Privacy Policy."
+      );
       return;
     }
 
@@ -101,13 +176,9 @@ export default function RegisterPage() {
 
     try {
       setLoading(true);
-      setApiError("");
 
-      const response = await fetch("http://localhost:4000/api/auth/register", {
+      await fetcher("/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
@@ -119,21 +190,16 @@ export default function RegisterPage() {
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Registration failed on server side processing."
-        );
-      }
-
       setSuccess(true);
-      setTimeout(() => {
+
+      window.setTimeout(() => {
         router.push("/login");
       }, 1500);
-    } catch (err: any) {
+    } catch (error) {
       setApiError(
-        err?.message || "Registration failed backend connection handshake."
+        error instanceof Error
+          ? error.message
+          : "Registration failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -141,231 +207,512 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#060810] text-white flex items-center justify-center font-sans p-5 select-none relative overflow-hidden">
-      {/* Background Layer Ambiance Ambient Lighting */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[450px] h-[450px] bg-orange-500/5 blur-[130px] rounded-full pointer-events-none" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#060810] p-5 font-sans text-white">
+      {/* Ambient background */}
+      <div
+        className="pointer-events-none absolute left-[-10%] top-[-10%] h-[500px] w-[500px] rounded-full bg-blue-500/5 blur-[150px]"
+        aria-hidden="true"
+      />
 
-      <div className="w-full max-w-[960px] bg-[#090d16] border border-white/10 rounded-[28px] overflow-hidden grid grid-cols-1 md:grid-cols-2 shadow-2xl shadow-black/60">
-        
-        {/* Left Panel - Corporate Branding Information */}
-        <section className="bg-black/20 p-10 flex flex-col justify-between border-r border-white/5 relative">
+      <div
+        className="pointer-events-none absolute bottom-[-10%] right-[-10%] h-[450px] w-[450px] rounded-full bg-orange-500/5 blur-[130px]"
+        aria-hidden="true"
+      />
+
+      <div className="grid w-full max-w-[960px] grid-cols-1 overflow-hidden rounded-[28px] border border-white/10 bg-[#090d16] shadow-2xl shadow-black/60 md:grid-cols-2">
+        {/* Branding panel */}
+        <section className="relative flex flex-col justify-between border-b border-white/5 bg-black/20 p-8 text-left sm:p-10 md:border-b-0 md:border-r">
           <div className="flex items-center gap-2.5">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-xl flex items-center shadow-lg shadow-blue-500/10">
-              <Wrench size={18} className="text-white" strokeWidth={2.5} />
+            <div className="flex items-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 p-2 shadow-lg shadow-blue-500/10">
+              <Wrench
+                size={18}
+                className="text-white"
+                strokeWidth={2.5}
+              />
             </div>
+
             <span className="text-xl font-black tracking-tight">
               Kamdar<span className="text-orange-500">Nepal</span>
             </span>
           </div>
 
           <div className="my-auto py-10 text-left">
-            <span className="inline-flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1 text-[10px] font-extrabold tracking-wider text-blue-400 mb-6 uppercase">
-              <Layers size={11} /> Verified Workforce Network
+            <span className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-blue-400">
+              <Layers size={11} />
+              Verified Workforce Network
             </span>
-            <h1 className="text-3xl font-black tracking-tight text-white leading-tight mb-4">
-              Nepal&apos;s premier network for <span className="text-orange-500">verified</span> local workforce.
+
+            <h1 className="mb-4 text-3xl font-black leading-tight tracking-tight text-white">
+              Nepal&apos;s trusted network for{" "}
+              <span className="text-orange-500">local professionals.</span>
             </h1>
-            <p className="text-white/40 text-sm leading-relaxed">
-              Connecting homes, offices, and construction sites with skilled professionals instantly. Your trusted on-demand ecosystem for smarter, hassle-free local labor hire across Nepal.
+
+            <p className="text-sm leading-relaxed text-white/40">
+              Connect with skilled professionals for your home, office, and
+              construction needs. Or join our network and offer your skills
+              to customers across Nepal.
             </p>
           </div>
 
-          <div className="text-xs text-white/20 font-medium text-left">
-            Clean Architecture Compliance © 2026
+          <div className="text-xs font-medium text-white/20">
+            © 2026 Kamdar Nepal
           </div>
         </section>
 
-        {/* Right Panel - Core Multi-step Registration Form */}
-        <section className="p-10 flex flex-col justify-center text-left">
+        {/* Registration panel */}
+        <section className="flex flex-col justify-center p-8 text-left sm:p-10">
           {success ? (
-            <div className="py-12 text-center flex flex-col items-center justify-center gap-4">
-              <div className="bg-emerald-500/10 p-5 rounded-full border border-emerald-500/20 text-emerald-400">
+            <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+              <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 p-5 text-emerald-400">
                 <CheckCircle2 size={40} />
               </div>
-              <h3 className="text-xl font-black text-white tracking-tight">Onboarding Process Initiated</h3>
-              <p className="text-sm text-white/40 max-w-xs">Your credential tokens have been successfully synchronized inside the active Neon Node cluster.</p>
+
+              <h3 className="text-xl font-black tracking-tight text-white">
+                Account Created Successfully
+              </h3>
+
+              <p className="max-w-xs text-sm text-white/40">
+                Your account is ready. Redirecting you to the sign-in page...
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-5">
               <div>
-                <h2 className="text-2xl font-extrabold tracking-tight text-white mb-1">Create Account</h2>
-                <p className="text-white/40 text-xs">Access the high-fidelity secure service layer.</p>
+                <h2 className="mb-1 text-2xl font-extrabold tracking-tight text-white">
+                  Create Account
+                </h2>
+
+                <p className="text-xs text-white/40">
+                  Get started with trusted local services.
+                </p>
               </div>
 
-              {/* Identity Selector Tabs */}
-              <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+              {/* Account type */}
+              <div
+                className="flex rounded-xl border border-white/5 bg-white/5 p-1"
+                role="tablist"
+                aria-label="Account type"
+              >
                 <button
                   type="button"
-                  onClick={() => { setUserType("customer"); setApiError(""); }}
-                  className={`flex-1 flex items-center justify-center gap-2 h-9 border-none rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 ${
-                    userType === "customer" ? "bg-blue-600 text-white shadow-md" : "bg-transparent text-white/50 hover:text-white"
+                  role="tab"
+                  aria-selected={userType === "customer"}
+                  onClick={() => handleUserTypeChange("customer")}
+                  className={`flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border-none text-xs font-bold transition-all duration-200 ${
+                    userType === "customer"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-transparent text-white/50 hover:text-white"
                   }`}
                 >
-                  <User size={13} /> Customer
+                  <User size={13} />
+                  Customer
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => { setUserType("worker"); setApiError(""); }}
-                  className={`flex-1 flex items-center justify-center gap-2 h-9 border-none rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 ${
-                    userType === "worker" ? "bg-orange-500 text-[#03050a] shadow-md" : "bg-transparent text-white/50 hover:text-white"
+                  role="tab"
+                  aria-selected={userType === "worker"}
+                  onClick={() => handleUserTypeChange("worker")}
+                  className={`flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border-none text-xs font-bold transition-all duration-200 ${
+                    userType === "worker"
+                      ? "bg-orange-500 text-[#03050a] shadow-md"
+                      : "bg-transparent text-white/50 hover:text-white"
                   }`}
                 >
-                  <Briefcase size={13} /> Kamdar
+                  <Briefcase size={13} />
+                  Kamdar
                 </button>
               </div>
 
+              {/* API error */}
               {apiError && (
-                <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-medium flex items-center gap-2.5">
+                <div
+                  role="alert"
+                  className="flex items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 p-3.5 text-xs font-medium text-red-400"
+                >
                   <ShieldAlert size={16} className="shrink-0" />
                   <span>{apiError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-                {/* Dynamic Professional Skill Selector Window */}
+              <form
+                onSubmit={handleSubmit}
+                className="flex flex-col gap-3.5"
+                noValidate
+              >
+                {/* Professional skill */}
                 {userType === "worker" && (
-                  <div className="flex flex-col gap-1.5 relative" ref={dropdownRef}>
-                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Professional Trade / Skill</label>
-                    <div 
-                      onClick={() => setIsOpen(!isOpen)}
-                      className="w-full h-11 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between px-4 text-xs text-slate-300 cursor-pointer hover:border-white/20 transition-colors"
+                  <div
+                    ref={dropdownRef}
+                    className="relative flex flex-col gap-1.5"
+                  >
+                    <label
+                      htmlFor="professional-trade"
+                      className="text-[10px] font-extrabold uppercase tracking-wider text-white/40"
                     >
-                      <span>{skill ? skillsList.find(s => s.value === skill)?.label : "-- कुन काम गर्नुहुन्छ छान्नुहोस् --"}</span>
-                      <ChevronDown size={14} className="text-white/40" />
-                    </div>
+                      Professional Trade / Skill
+                    </label>
+
+                    <button
+                      id="professional-trade"
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={isOpen}
+                      onClick={() => setIsOpen((previous) => !previous)}
+                      className="flex h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 text-left text-xs text-slate-300 outline-none transition-colors hover:border-white/20 focus:border-orange-500/50"
+                    >
+                      <span>
+                        {skill
+                          ? skillsList.find(
+                              (item) => item.value === skill
+                            )?.label
+                          : "-- कुन काम गर्नुहुन्छ छान्नुहोस् --"}
+                      </span>
+
+                      <ChevronDown
+                        size={14}
+                        className={`text-white/40 transition-transform ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
 
                     {isOpen && (
-                      <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-[#0d121f] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl">
+                      <div
+                        role="listbox"
+                        aria-label="Professional trade"
+                        className="absolute left-0 top-[calc(100%+4px)] z-50 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0d121f] shadow-2xl"
+                      >
                         {skillsList.map((item) => (
-                          <div
+                          <button
                             key={item.value}
-                            onClick={() => { setSkill(item.value); setIsOpen(false); setApiError(""); }}
-                            className="px-4 py-3 text-xs text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-colors border-b border-white/5 last:border-none"
+                            type="button"
+                            role="option"
+                            aria-selected={skill === item.value}
+                            onClick={() => {
+                              setSkill(item.value);
+                              setIsOpen(false);
+                              setApiError("");
+                            }}
+                            className="block w-full border-b border-white/5 px-4 py-3 text-left text-xs text-white/70 transition-colors last:border-none hover:bg-white/10 hover:text-white"
                           >
                             {item.label}
-                          </div>
+                          </button>
                         ))}
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
+                {/* Name */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">First Name</label>
+                    <label
+                      htmlFor="firstName"
+                      className="text-[10px] font-extrabold uppercase tracking-wider text-white/40"
+                    >
+                      First Name
+                    </label>
+
                     <input
+                      id="firstName"
+                      name="firstName"
                       type="text"
+                      autoComplete="given-name"
                       placeholder="e.g. Ram"
                       value={form.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      className={`w-full h-11 bg-white/5 border rounded-xl px-4 text-xs text-white outline-none transition-all ${
-                        errors.firstName ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      onChange={(event) =>
+                        handleInputChange(
+                          "firstName",
+                          event.target.value
+                        )
+                      }
+                      aria-invalid={Boolean(errors.firstName)}
+                      aria-describedby={
+                        errors.firstName
+                          ? "firstName-error"
+                          : undefined
+                      }
+                      className={`h-11 w-full rounded-xl border bg-white/5 px-4 text-xs text-white outline-none transition-all ${
+                        errors.firstName
+                          ? "border-red-500/50 focus:border-red-500"
+                          : "border-white/10 focus:border-blue-500/50"
                       }`}
                     />
+
+                    {errors.firstName && (
+                      <span
+                        id="firstName-error"
+                        className="text-[10px] text-red-400"
+                      >
+                        {errors.firstName}
+                      </span>
+                    )}
                   </div>
+
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Last Name</label>
+                    <label
+                      htmlFor="lastName"
+                      className="text-[10px] font-extrabold uppercase tracking-wider text-white/40"
+                    >
+                      Last Name
+                    </label>
+
                     <input
+                      id="lastName"
+                      name="lastName"
                       type="text"
+                      autoComplete="family-name"
                       placeholder="e.g. Bahadur"
                       value={form.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      className={`w-full h-11 bg-white/5 border rounded-xl px-4 text-xs text-white outline-none transition-all ${
-                        errors.lastName ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      onChange={(event) =>
+                        handleInputChange(
+                          "lastName",
+                          event.target.value
+                        )
+                      }
+                      aria-invalid={Boolean(errors.lastName)}
+                      aria-describedby={
+                        errors.lastName
+                          ? "lastName-error"
+                          : undefined
+                      }
+                      className={`h-11 w-full rounded-xl border bg-white/5 px-4 text-xs text-white outline-none transition-all ${
+                        errors.lastName
+                          ? "border-red-500/50 focus:border-red-500"
+                          : "border-white/10 focus:border-blue-500/50"
                       }`}
                     />
+
+                    {errors.lastName && (
+                      <span
+                        id="lastName-error"
+                        className="text-[10px] text-red-400"
+                      >
+                        {errors.lastName}
+                      </span>
+                    )}
                   </div>
                 </div>
 
+                {/* Email */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Email Address</label>
+                  <label
+                    htmlFor="email"
+                    className="text-[10px] font-extrabold uppercase tracking-wider text-white/40"
+                  >
+                    Email Address
+                  </label>
+
                   <div className="relative">
-                    <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Mail
+                      size={14}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
+                    />
+
                     <input
+                      id="email"
+                      name="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="name@example.com"
                       value={form.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-4 text-xs text-white outline-none transition-all ${
-                        errors.email ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      onChange={(event) =>
+                        handleInputChange("email", event.target.value)
+                      }
+                      aria-invalid={Boolean(errors.email)}
+                      aria-describedby={
+                        errors.email ? "email-error" : undefined
+                      }
+                      className={`h-11 w-full rounded-xl border bg-white/5 pl-11 pr-4 text-xs text-white outline-none transition-all ${
+                        errors.email
+                          ? "border-red-500/50 focus:border-red-500"
+                          : "border-white/10 focus:border-blue-500/50"
                       }`}
                     />
                   </div>
+
+                  {errors.email && (
+                    <span
+                      id="email-error"
+                      className="text-[10px] text-red-400"
+                    >
+                      {errors.email}
+                    </span>
+                  )}
                 </div>
 
+                {/* Phone */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Phone Number (Nepal)</label>
+                  <label
+                    htmlFor="phone"
+                    className="text-[10px] font-extrabold uppercase tracking-wider text-white/40"
+                  >
+                    Phone Number (Nepal)
+                  </label>
+
                   <div className="relative">
-                    <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Phone
+                      size={14}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
+                    />
+
                     <input
-                      type="text"
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
                       placeholder="98XXXXXXXX"
                       maxLength={10}
                       value={form.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-4 text-xs text-white outline-none transition-all ${
-                        errors.phone ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      onChange={(event) =>
+                        handleInputChange(
+                          "phone",
+                          event.target.value.replace(/\D/g, "")
+                        )
+                      }
+                      aria-invalid={Boolean(errors.phone)}
+                      aria-describedby={
+                        errors.phone ? "phone-error" : undefined
+                      }
+                      className={`h-11 w-full rounded-xl border bg-white/5 pl-11 pr-4 text-xs text-white outline-none transition-all ${
+                        errors.phone
+                          ? "border-red-500/50 focus:border-red-500"
+                          : "border-white/10 focus:border-blue-500/50"
                       }`}
                     />
                   </div>
+
+                  {errors.phone && (
+                    <span
+                      id="phone-error"
+                      className="text-[10px] text-red-400"
+                    >
+                      {errors.phone}
+                    </span>
+                  )}
                 </div>
 
+                {/* Password */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-extrabold text-white/40 uppercase tracking-wider">Password Context</label>
+                  <label
+                    htmlFor="password"
+                    className="text-[10px] font-extrabold uppercase tracking-wider text-white/40"
+                  >
+                    Password
+                  </label>
+
                   <div className="relative">
-                    <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Lock
+                      size={14}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
+                    />
+
                     <input
+                      id="password"
+                      name="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Min 8 characters securely hashed"
+                      autoComplete="new-password"
+                      placeholder="Minimum 8 characters"
                       value={form.password}
-                      onChange={(e) => handleInputChange("password", e.target.value)}
-                      className={`w-full h-11 bg-white/5 border rounded-xl pl-11 pr-11 text-xs text-white outline-none transition-all ${
-                        errors.password ? 'border-red-500/50' : 'border-white/10 focus:border-blue-500/50'
+                      onChange={(event) =>
+                        handleInputChange(
+                          "password",
+                          event.target.value
+                        )
+                      }
+                      aria-invalid={Boolean(errors.password)}
+                      aria-describedby={
+                        errors.password
+                          ? "password-error"
+                          : undefined
+                      }
+                      className={`h-11 w-full rounded-xl border bg-white/5 pl-11 pr-11 text-xs text-white outline-none transition-all ${
+                        errors.password
+                          ? "border-red-500/50 focus:border-red-500"
+                          : "border-white/10 focus:border-blue-500/50"
                       }`}
                     />
+
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-none border-none text-white/30 hover:text-white cursor-pointer p-0"
+                      aria-label={
+                        showPassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                      onClick={() =>
+                        setShowPassword((previous) => !previous)
+                      }
+                      className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0 text-white/30 transition-colors hover:text-white"
                     >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {showPassword ? (
+                        <EyeOff size={14} />
+                      ) : (
+                        <Eye size={14} />
+                      )}
                     </button>
                   </div>
+
+                  {errors.password && (
+                    <span
+                      id="password-error"
+                      className="text-[10px] text-red-400"
+                    >
+                      {errors.password}
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex items-start gap-2.5 mt-1 cursor-pointer" onClick={() => setAgreeTerms(!agreeTerms)}>
+                {/* Terms */}
+                <label className="mt-1 flex cursor-pointer items-start gap-2.5">
                   <input
                     type="checkbox"
                     checked={agreeTerms}
-                    onChange={() => {}}
-                    className="mt-0.5 h-3.5 w-3.5 rounded border-white/10 bg-slate-950 accent-blue-600 cursor-pointer"
+                    onChange={(event) =>
+                      setAgreeTerms(event.target.checked)
+                    }
+                    className="mt-0.5 h-3.5 w-3.5 cursor-pointer rounded border-white/10 bg-slate-950 accent-blue-600"
                   />
-                  <span className="text-[11px] text-white/50 leading-tight">
-                    I explicitly consent and agree to the system Terms of Service and secure Privacy Policy Parameters.
-                  </span>
-                </div>
 
+                  <span className="text-[11px] leading-tight text-white/50">
+                    I agree to the Terms of Service and Privacy Policy.
+                  </span>
+                </label>
+
+                {/* Submit */}
                 <Button
                   type="submit"
                   disabled={loading}
-                  className={`w-full h-11 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 border-none select-none disabled:opacity-50 mt-2 ${
+                  className={`mt-2 flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border-none text-xs font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
                     userType === "worker"
-                      ? "bg-orange-500 hover:bg-orange-600 text-[#03050a]"
-                      : "bg-blue-600 hover:bg-blue-500 text-white"
+                      ? "bg-orange-500 text-[#03050a] hover:bg-orange-600"
+                      : "bg-blue-600 text-white hover:bg-blue-500"
                   }`}
                 >
-                  {loading
-                    ? "Processing Pipelines..."
-                    : userType === "worker"
-                    ? "Join as Professional Workforce →"
-                    : "Create Consumer Account →"}
+                  {loading ? (
+                    <>
+                      <span
+                        className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                        aria-hidden="true"
+                      />
+                      Creating account...
+                    </>
+                  ) : userType === "worker" ? (
+                    "Join as a Professional →"
+                  ) : (
+                    "Create Customer Account →"
+                  )}
                 </Button>
 
-                <div className="text-center text-xs text-white/40 mt-1">
-                  Already have an identity token?{" "}
-                  <Link href="/login" className="text-blue-400 font-bold hover:underline">
-                    Sign in context
+                <div className="mt-1 text-center text-xs text-white/40">
+                  Already have an account?{" "}
+                  <Link
+                    href="/login"
+                    className="font-bold text-blue-400 hover:underline"
+                  >
+                    Sign in
                   </Link>
                 </div>
               </form>
