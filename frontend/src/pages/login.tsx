@@ -6,6 +6,23 @@ import Link from "next/link";
 import { fetcher } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Mail, Lock, ShieldAlert, Eye, EyeOff, Wrench, User, Briefcase } from "lucide-react";
+interface LoginUser {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+}
+
+interface LoginResponse {
+  token?: string;
+  user?: LoginUser;
+  data?: {
+    token?: string;
+    user?: LoginUser;
+  };
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,7 +50,7 @@ export default function LoginPage() {
         password: password,
       };
 
-      const response = await fetcher("/auth/login", {
+      const response = await fetcher<LoginResponse>("/auth/login", {
         method: "POST",
         body: JSON.stringify(requestBody),
       });

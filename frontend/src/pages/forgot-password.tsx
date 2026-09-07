@@ -4,6 +4,9 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import MainLayout from "../components/MainLayout";
 import { fetcher } from "../lib/api";
+interface ForgotPasswordResponse {
+  message?: string;
+}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -16,11 +19,15 @@ export default function ForgotPasswordPage() {
     setMessage("");
 
     try {
-      const data = await fetcher("/api/auth/forgot-password", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-      });
-      setMessage(data.message || "Password reset request sent.");
+      const data = await fetcher<ForgotPasswordResponse>(
+  "/auth/forgot-password",
+  {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  }
+);
+
+setMessage(data.message || "Password reset request sent.");
     } catch (err: any) {
       setError(err.message);
     }
