@@ -38,8 +38,8 @@ function Logo() {
         className="text-[19px] font-extrabold leading-none tracking-[-0.03em]"
         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
       >
-        <span className="text-white">Sewa</span>
-        <span style={{ color: "#fbbf24" }}>Link</span>
+        <span className="text-white">Kam</span>
+        <span style={{ color: "#fbbf24" }}>dar</span>
       </span>
     </Link>
   );
@@ -159,7 +159,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
             <div className="lg:col-span-2">
               <Logo />
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
-                SewaLink is a home services marketplace connecting homeowners with verified local professionals. Currently in active development.
+                Kamdar is a home services marketplace connecting homeowners with verified local professionals. Currently in active development.
               </p>
               {/* Social icons */}
               <div className="flex gap-2 mt-5">
@@ -224,7 +224,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 
           {/* Bottom bar */}
           <div className="border-t border-white/[0.05] pt-6 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-slate-400">© {new Date().getFullYear()} SewaLink. All rights reserved.</p>
+            <p className="text-xs text-slate-400">© {new Date().getFullYear()} Kamdar. All rights reserved.</p>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
               <span className="text-xs text-slate-400">Early access registration open</span>

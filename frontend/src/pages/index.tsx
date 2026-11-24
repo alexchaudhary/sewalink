@@ -99,8 +99,8 @@ export default function Home() {
   return (
     <HomeLayout>
       <Head>
-        <title>SewaLink — Home Services Marketplace Nepal</title>
-        <meta name="description" content="SewaLink connects homeowners with verified local home service professionals in Nepal." />
+        <title>Kamdar — Home Services Marketplace Nepal</title>
+        <meta name="description" content="Kamdar connects homeowners with verified local home service professionals in Nepal." />
       </Head>
 
       {/* ════════════════════════════════════════════════════════════════════
@@ -168,10 +168,10 @@ export default function Home() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <p className="mb-1 text-xs uppercase tracking-widest text-slate-400">SewaLink</p>
+                    <p className="mb-1 text-xs uppercase tracking-widest text-slate-400">KAMDAR</p>
                     <h3 className="text-lg font-bold text-white">Book a Service</h3>
                   </div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-black shadow-lg shadow-amber-500/30">S</span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-black shadow-lg shadow-amber-500/30">K</span>
                 </div>
 
                 <div className="mb-5">
@@ -283,7 +283,7 @@ export default function Home() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <SectionHeading
             label="Simple & Safe"
-            title="How SewaLink"
+            title="How Kamdar"
             highlight="Works"
             sub="Three simple steps to get your home service done."
           />
@@ -302,12 +302,12 @@ export default function Home() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          5. WHY SEWALINK
+          5. WHY KAMDAR
       ════════════════════════════════════════════════════════════════════ */}
       <section className="overflow-hidden py-20 md:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <SectionHeading
-            label="Why SewaLink"
+            label="Why Kamdar"
             title="Built for"
             highlight="Trust & Simplicity"
             sub="We're designing every feature to make hiring local professionals safe, fast, and transparent."
@@ -346,7 +346,7 @@ export default function Home() {
           <h2 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-6 leading-tight">
             Be Among the First to{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-500">
-              Experience SewaLink
+              Experience Kamdar
             </span>
           </h2>
 
