@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowRight,
@@ -16,6 +16,7 @@ import {
   MapPin,
   Paintbrush,
   Refrigerator,
+  Search,
   ShieldCheck,
   Sparkles,
   Truck,
@@ -25,6 +26,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import HomeLayout from "@/components/HomeLayout";
+import { fetcher } from "@/lib/api";
+
+interface ProviderSummary {
+  id: string;
+  displayName: string;
+  headline: string | null;
+  city: string | null;
+  hourlyRate: number | string | null;
+}
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -91,10 +101,78 @@ function SectionHeading({ label, title, highlight, sub }: { label: string; title
   );
 }
 
+function formatRate(rate: ProviderSummary["hourlyRate"]) {
+  if (rate === null || rate === undefined || rate === "") {
+    return "Rate on request";
+  }
+
+  const numericRate = Number(rate);
+  return Number.isFinite(numericRate)
+    ? `Rs. ${numericRate.toLocaleString()}/hr`
+    : "Rate on request";
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const [query, setQuery] = useState("");
   const [city, setCity] = useState("Kathmandu");
+  const [activeFilters, setActiveFilters] = useState({ q: "", city: "Kathmandu" });
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [providers, setProviders] = useState<ProviderSummary[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [error, setError] = useState("");
+  const requestId = useRef(0);
+
+  const searchProviders = async (searchTerm: string, selectedCity: string, categorySlug: string | null) => {
+    const currentRequest = ++requestId.current;
+    const normalizedQuery = searchTerm.trim();
+
+    setQuery(searchTerm);
+    setCity(selectedCity);
+    setActiveFilters({ q: normalizedQuery, city: selectedCity });
+    setActiveCategory(categorySlug);
+    setHasSearched(true);
+    setIsLoading(true);
+    setError("");
+
+    const params = new URLSearchParams({
+      q: normalizedQuery,
+      city: selectedCity,
+      limit: "8",
+    });
+
+    try {
+      const response = await fetcher(`/api/providers?${params.toString()}`);
+      const matchingProviders: ProviderSummary[] = response?.data?.providers ?? [];
+      const matchingTotal: number = response?.data?.pagination?.total ?? matchingProviders.length;
+
+      if (currentRequest !== requestId.current) {
+        return;
+      }
+
+      setProviders(matchingProviders);
+      setTotal(matchingTotal);
+    } catch (requestError) {
+      if (currentRequest !== requestId.current) {
+        return;
+      }
+
+      setProviders([]);
+      setTotal(0);
+      setError(requestError instanceof Error ? requestError.message : "Unable to load providers. Please try again.");
+    } finally {
+      if (currentRequest === requestId.current) {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const clearFilters = () => {
+    void searchProviders("", "", null);
+  };
 
   return (
     <HomeLayout>
@@ -174,22 +252,6 @@ export default function Home() {
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-black shadow-lg shadow-amber-500/30">K</span>
                 </div>
 
-                <div className="mb-5">
-                  <label htmlFor="service-city" className="mb-2 block text-xs font-medium text-slate-400">
-                    Service area
-                  </label>
-                  <select
-                    id="service-city"
-                    value={city}
-                    onChange={(event) => setCity(event.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
-                  >
-                    {["Kathmandu", "Lalitpur", "Bhaktapur"].map((name) => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </select>
-                </div>
-
                 {/* Notification cards */}
                 <div className="space-y-3">
                   {[
@@ -259,20 +321,134 @@ export default function Home() {
             highlight="Categories"
             sub="Browse trusted home services, with upfront starting prices in NPR."
           />
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void searchProviders(query, city, null);
+            }}
+            className="mx-auto mb-10 flex max-w-4xl flex-col gap-3 sm:flex-row"
+          >
+            <label className="relative min-w-0 flex-1">
+              <span className="sr-only">Search services or providers</span>
+              <Search size={18} strokeWidth={1.75} aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search a service or provider..."
+                className="w-full rounded-xl border border-slate-700 bg-slate-900/80 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Filter by city</span>
+              <select
+                value={city}
+                onChange={(event) => setCity(event.target.value)}
+                className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-500 sm:w-44"
+              >
+                <option value="">All cities</option>
+                {["Kathmandu", "Lalitpur", "Bhaktapur"].map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="rounded-xl btn-amber px-6 py-3 text-sm font-semibold text-slate-950 disabled:cursor-wait disabled:opacity-70"
+            >
+              {isLoading ? "Searching..." : "Search"}
+            </button>
+          </form>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
             {categories.map((cat) => (
-              <Link
+              <button
+                type="button"
                 key={cat.label}
-                href={`/services?category=${cat.slug}`}
-                className="glass-card group flex min-w-0 flex-col items-center gap-3 p-4 text-center transition-all duration-300 hover:-translate-y-1 sm:p-6"
+                aria-pressed={activeCategory === cat.slug}
+                onClick={() => void searchProviders(cat.label, city, cat.slug)}
+                className={`glass-card group flex min-w-0 flex-col items-center gap-3 p-4 text-center transition-all duration-300 hover:-translate-y-1 sm:p-6 ${
+                  activeCategory === cat.slug ? "border-amber-500/50" : ""
+                }`}
               >
                 <IconBadge icon={cat.icon} className="h-12 w-12 transition-transform duration-200 group-hover:scale-110 sm:h-14 sm:w-14" />
                 <span className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{cat.label}</span>
                 <span className="text-xs leading-snug text-slate-400">{cat.desc}</span>
                 <span className="mt-1 text-xs font-semibold text-amber-400">{cat.price}</span>
-              </Link>
+              </button>
             ))}
           </div>
+          {hasSearched && (
+            <section aria-label="Provider search results" aria-live="polite" className="mt-12">
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-bold text-white">Available Providers</h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {activeCategory
+                      ? categories.find((category) => category.slug === activeCategory)?.label
+                      : activeFilters.q || "All services"}
+                    {" · "}
+                    {activeFilters.city || "All cities"}
+                  </p>
+                </div>
+                {!isLoading && !error && providers.length > 0 && (
+                  <p className="text-sm text-slate-400">
+                    Showing {providers.length} of {total} providers
+                  </p>
+                )}
+              </div>
+
+              {isLoading ? (
+                <div className="rounded-2xl border border-slate-800 bg-white/[0.03] p-8 text-center text-slate-400">
+                  Searching providers...
+                </div>
+              ) : error ? (
+                <div role="alert" className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">
+                  <p className="text-sm text-red-300">Could not load providers: {error}</p>
+                  <button
+                    type="button"
+                    onClick={() => void searchProviders(activeFilters.q, activeFilters.city, activeCategory)}
+                    className="mt-4 rounded-lg border border-red-400/30 px-4 py-2 text-sm text-red-200 transition hover:bg-red-400/10"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : providers.length === 0 ? (
+                <div className="rounded-2xl border border-slate-800 bg-white/[0.03] p-8 text-center">
+                  <p className="text-sm text-slate-300">No providers found for these filters.</p>
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-4 rounded-lg border border-amber-500/30 px-4 py-2 text-sm font-medium text-amber-300 transition hover:bg-amber-500/10"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {providers.map((provider) => (
+                    <article key={provider.id} className="glass-card flex min-w-0 flex-col p-5">
+                      <h4 className="truncate text-base font-bold text-white">{provider.displayName}</h4>
+                      <p className="mt-1 line-clamp-2 min-h-10 text-sm text-slate-400">
+                        {provider.headline || "Verified home service provider"}
+                      </p>
+                      <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-slate-400">
+                        <MapPin size={14} strokeWidth={1.75} aria-hidden="true" />
+                        {provider.city || "Location not listed"}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-amber-300">{formatRate(provider.hourlyRate)}</p>
+                      <Link
+                        href={`/providers/${provider.id}`}
+                        className="mt-4 inline-flex justify-center rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-amber-500/50 hover:text-amber-300"
+                      >
+                        View provider
+                      </Link>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </section>
 
