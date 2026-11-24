@@ -89,7 +89,7 @@ export default function LoginPage() {
         {/* Left Hand Column Panel Viewport */}
         <section className="auth-left" style={{ padding: 48, background: "linear-gradient(135deg,#0d1117 0%,#111827 100%)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div>
-            <h1 style={{ fontSize: 38, fontWeight: 900, margin: "20px 0" }}>Sign in to your sewalink workspace.</h1>
+            <h1 style={{ fontSize: 38, fontWeight: 900, margin: "20px 0" }}>Sign in to your Kamdar workspace.</h1>
             <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>Test your local backend synchronization routines securely.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginTop: 24 }}>
               {SERVICES.map(({ Icon, label }) => (
@@ -123,7 +123,7 @@ export default function LoginPage() {
                 <label style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", fontWeight: 700 }}>Email Address</label>
                 <div style={{ position: "relative", marginTop: 4 }}>
                   <Mail size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.3)" }} />
-                  <input type="email" placeholder="alex@sewalink.com" value={form.email} onChange={(e) => set("email")(e.target.value)} disabled={loading || success} style={{ width: "100%", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 13, outline: "none", padding: "11px 12px 11px 36px" }} required />
+                  <input type="email" placeholder="alex@kamdar.com" value={form.email} onChange={(e) => set("email")(e.target.value)} disabled={loading || success} style={{ width: "100%", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 13, outline: "none", padding: "11px 12px 11px 36px" }} required />
                 </div>
                 {errors.email && <span style={{ color: "#f87171", fontSize: 11 }}>{errors.email}</span>}
               </div>

@@ -163,8 +163,8 @@ export default function RegisterPage() {
               </svg>
             </span>
             <span className="text-[19px] font-extrabold tracking-[-0.4px]">
-              <span className="text-white">Sewa</span>
-              <span className="text-amber-400">Link</span>
+              <span className="text-white">Kam</span>
+              <span className="text-amber-400">dar</span>
             </span>
           </Link>
 
@@ -185,7 +185,7 @@ export default function RegisterPage() {
 
           {/* Subtext */}
           <p className="mb-5 max-w-[320px] text-[12.5px] leading-relaxed text-white/[0.38]">
-            SewaLink connects you with verified, background-checked professionals for every home service need — fast, safe, and transparent.
+            Kamdar connects you with verified, background-checked professionals for every home service need — fast, safe, and transparent.
           </p>
 
           {/* Service chips */}
@@ -255,10 +255,10 @@ export default function RegisterPage() {
 
           {/* Mobile logo */}
           <Link href="/" className="mb-8 inline-flex items-center gap-2 no-underline lg:hidden">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gradient-to-br from-amber-400 to-orange-500 text-[13px] font-black text-white">S</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gradient-to-br from-amber-400 to-orange-500 text-[13px] font-black text-white">K</span>
             <span className="text-[17px] font-extrabold">
-              <span className="text-white">Sewa</span>
-              <span className="text-amber-400">Link</span>
+              <span className="text-white">Kam</span>
+              <span className="text-amber-400">dar</span>
             </span>
           </Link>
 
@@ -271,7 +271,7 @@ export default function RegisterPage() {
               <div>
                 <h2 className="text-[20px] font-extrabold text-white">Account created!</h2>
                 <p className="mt-1 text-[12.5px] text-white/35">
-                  Welcome to SewaLink. Redirecting you to your dashboard…
+                  Welcome to Kamdar. Redirecting you to your dashboard…
                 </p>
               </div>
               <Link
@@ -289,7 +289,7 @@ export default function RegisterPage() {
                 Create your account
               </h2>
               <p className="mb-5 text-[12px] text-white/35">
-                Join the SewaLink marketplace — it takes under a minute.
+                Join the Kamdar marketplace — it takes under a minute.
               </p>
 
               {/* Role toggle */}

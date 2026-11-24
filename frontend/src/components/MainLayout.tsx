@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-export default function MainLayout({ children, title = "SewaLink" }: { children: ReactNode; title?: string }) {
+export default function MainLayout({ children, title = "Kamdar" }: { children: ReactNode; title?: string }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -14,7 +14,7 @@ export default function MainLayout({ children, title = "SewaLink" }: { children:
       <header className="border-b border-slate-800 bg-slate-950/95 py-4 shadow-sm shadow-slate-950/30 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6">
           <Link href="/" className="text-xl font-semibold text-white">
-            SewaLink
+            Kamdar
           </Link>
           <nav className="flex flex-wrap items-center gap-4 text-sm text-slate-300">
             <Link href="/providers" className="transition hover:text-white">
