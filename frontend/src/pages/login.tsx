@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation"; 
 import Link from "next/link";
 import { fetcher } from "../lib/api";
+import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
-import { Mail, Lock, ShieldAlert, Eye, EyeOff, Wrench, User, Briefcase } from "lucide-react";
+import { Mail, Lock, ShieldAlert, Eye, EyeOff, User, Briefcase } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,12 +80,8 @@ const dbUserRole = loggedInUser?.role;
 
       <div className="w-full max-w-[420px] bg-[#090d16] border border-white/5 rounded-[24px] px-8 py-10 shadow-2xl shadow-black/50 text-left">
         
-        {/* Kamdar Nepal Brand Header */}
-        <div className="flex items-center gap-2.5 justify-center mb-8">
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-xl flex items-center shadow-lg shadow-blue-500/10">
-            <Wrench size={18} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-2xl font-black tracking-tight">Kamdar<span className="text-orange-500">Nepal</span></span>
+        <div className="mb-8 flex justify-center">
+          <BrandLogo />
         </div>
 
         <h2 className="text-2xl font-extrabold tracking-tight text-white mb-2">Welcome back</h2>

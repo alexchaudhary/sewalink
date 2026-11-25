@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/router";
 import HomeLayout from "@/components/HomeLayout";
+import BrandLogo from "@/components/BrandLogo";
 import {
   Wrench,
   Zap,
@@ -237,14 +238,7 @@ export default function Home() {
             <div className="relative flex items-center justify-center">
               <div className="relative border border-slate-800/80 bg-slate-900/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl w-full max-w-md shadow-2xl">
                 <div className="flex items-center justify-between mb-6 border-b border-slate-800/80 pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-2 rounded-xl flex items-center">
-                      <Wrench size={18} className="text-slate-950" strokeWidth={2.5} />
-                    </div>
-                    <span className="text-xl font-black text-white">
-                      Kamdar<span className="text-orange-500">Nepal</span>
-                    </span>
-                  </div>
+                  <BrandLogo size="sm" />
                   <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
                     Quick Booking
                   </span>

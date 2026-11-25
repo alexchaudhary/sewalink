@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import BrandLogo from "@/components/BrandLogo";
 import {
   AlertCircle,
   Apple,
@@ -27,7 +28,6 @@ import {
   Sparkles,
   Star,
   UserRound,
-  Wrench,
   Zap,
 } from "lucide-react";
 import { fetcher, getApiBaseUrl } from "../lib/api";
@@ -215,15 +215,9 @@ export default function RegisterPage() {
         <div className="pointer-events-none absolute -left-36 top-24 h-96 w-96 rounded-full bg-orange-500/[0.08] blur-[110px]" />
         <div className="pointer-events-none absolute -bottom-36 right-0 h-96 w-96 rounded-full bg-amber-300/[0.05] blur-[120px]" />
 
-        <Link href="/" className="relative z-10 inline-flex w-fit items-center gap-3" aria-label="Kamdar home">
-          <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#FF9F1C] to-[#FF6B00] text-[#17100A] shadow-lg shadow-orange-500/20">
-            <Wrench size={21} strokeWidth={2.6} aria-hidden="true" />
-          </span>
-          <span>
-            <span className="block text-[22px] font-extrabold leading-none tracking-tight">Kamdar</span>
-            <span className="mt-1 block text-[9px] font-bold tracking-[0.19em] text-white/45">HOME SERVICES MARKETPLACE</span>
-          </span>
-        </Link>
+        <div className="relative z-10">
+          <BrandLogo showSubtitle size="lg" />
+        </div>
 
         <div className="relative z-10 my-auto max-w-[650px] py-12 xl:py-16">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-300/15 bg-orange-300/[0.06] px-3 py-1.5 text-[11px] font-semibold text-orange-200/90">
@@ -299,12 +293,9 @@ export default function RegisterPage() {
       <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-8 sm:px-8 md:px-6 lg:px-10 xl:px-14">
         <div className="pointer-events-none absolute -right-36 -top-32 h-96 w-96 rounded-full bg-orange-500/[0.055] blur-[110px]" />
         <div className="relative z-10 w-full max-w-[560px]">
-          <Link href="/" className="mb-8 inline-flex items-center gap-2.5 md:hidden" aria-label="Kamdar home">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF9F1C] to-[#FF6B00] text-[#17100A]">
-              <Wrench size={18} strokeWidth={2.6} aria-hidden="true" />
-            </span>
-            <span className="text-lg font-extrabold tracking-tight">Kamdar</span>
-          </Link>
+          <div className="mb-8 md:hidden">
+            <BrandLogo size="sm" />
+          </div>
 
           {success ? (
             <div role="status" className="rounded-3xl border border-white/[0.08] bg-[#10141D] px-6 py-14 text-center shadow-2xl shadow-black/20 sm:px-10">

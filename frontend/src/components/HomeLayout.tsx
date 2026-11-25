@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode, SVGProps } from "react";
 import { useEffect, useState } from "react";
 import { Search, Menu, X } from "lucide-react";
+import BrandLogo from "./BrandLogo";
 
 const TOKEN_KEY = "kamdarnepal_token";
 
@@ -71,70 +72,6 @@ const NAV_LINKS = [
   { label: "Contact", href: "#" },
 ];
 
-function Logo() {
-  return (
-    <Link
-      href="/"
-      className="group flex flex-shrink-0 items-center gap-2.5 no-underline"
-      aria-label="Kamdar Nepal home"
-    >
-      <svg
-        width="36"
-        height="36"
-        viewBox="0 0 36 36"
-        fill="none"
-        className="flex-shrink-0"
-        aria-hidden="true"
-      >
-        <rect width="36" height="36" rx="9" fill="url(#lg)" />
-        <rect
-          x="6"
-          y="13"
-          width="14"
-          height="7"
-          rx="3.5"
-          stroke="#0a0c14"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <rect
-          x="16"
-          y="16"
-          width="14"
-          height="7"
-          rx="3.5"
-          stroke="#0a0c14"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <rect x="16" y="15" width="4" height="9" fill="url(#lg)" />
-        <defs>
-          <linearGradient
-            id="lg"
-            x1="0"
-            y1="0"
-            x2="36"
-            y2="36"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stopColor="#f59e0b" />
-            <stop offset="1" stopColor="#d97706" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      <span
-        className="text-[19px] font-extrabold leading-none tracking-[-0.03em]"
-        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-      >
-        <span className="text-xl font-black tracking-tight">
-          Kamdar<span className="text-orange-500">Nepal</span>
-        </span>
-      </span>
-    </Link>
-  );
-}
-
 export default function HomeLayout({
   children,
 }: {
@@ -179,7 +116,7 @@ export default function HomeLayout({
         }`}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <Logo />
+          <BrandLogo />
 
           <nav className="hidden items-center gap-1 lg:flex">
             {NAV_LINKS.map((link) => (
@@ -299,7 +236,7 @@ export default function HomeLayout({
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-14 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-2">
-              <Logo />
+              <BrandLogo showSubtitle />
 
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/35">
                 Kamdar Nepal is a home services marketplace connecting

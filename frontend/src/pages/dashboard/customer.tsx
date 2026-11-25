@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import BrandLogo from '@/components/BrandLogo';
 import { 
-  Wrench, 
   LogOut, 
   Bell, 
   Droplet, 
@@ -260,17 +260,7 @@ export default function Dashboard() {
 
       {/* --- TOP NAVIGATION BAR --- */}
       <header className="border-b border-slate-800/60 bg-[#07090e]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-        <div 
-          onClick={() => setCurrentView('dashboard')} 
-          className="flex items-center space-x-3 cursor-pointer group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            <Wrench className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-black tracking-tight text-white">
-            Kamdar<span className="text-orange-500">Nepal</span>
-          </span>
-        </div>
+        <BrandLogo />
 
         <div className="flex items-center space-x-4">
           {currentView === 'explore' ? (

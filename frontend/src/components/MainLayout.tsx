@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Wrench } from "lucide-react";
+import BrandLogo from "./BrandLogo";
 
 export interface MainLayoutProps {
   children: React.ReactNode;
@@ -58,16 +58,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           
           {/* Brand Corporate Uniform Logo & Main Nav Items Integration */}
           <div className="flex items-center space-x-8">
-            <Link href="/" className="group focus:outline-none select-none">
-              <div className="flex items-center gap-2.5">
-                <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-xl flex items-center shadow-lg shadow-blue-500/10 transition-transform duration-300 group-hover:rotate-12">
-                  <Wrench size={18} className="text-white" strokeWidth={2.5} />
-                </div>
-                <span className="text-xl font-black tracking-tight text-white transition-colors duration-200">
-                  Kamdar<span className="text-orange-500 transition-colors duration-200 group-hover:text-orange-400">Nepal</span>
-                </span>
-              </div>
-            </Link>
+            <BrandLogo />
 
             {/* Dynamic Navbar Navigation Links Controller */}
             <nav className="hidden md:flex items-center space-x-6">
