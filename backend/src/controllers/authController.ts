@@ -1,19 +1,27 @@
 import { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../config/prisma";
 import { sendSuccess, sendError } from "../utils/apiResponse";
 
-// Global Secret Definition for token signing
 const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "kamdarnepal_clean_architecture_key_2026";
+  process.env.JWT_SECRET || "kamdarnepal_clean_architecture_key_2026";
+
+// In-memory OTP store (5-minute TTL)
+const otpStore = new Map<string, { code: string; expiresAt: number }>();
+
+const normalizeRole = (rawRole?: string): "CUSTOMER" | "PROVIDER" | null => {
+  if (!rawRole) return "CUSTOMER";
+  const upper = String(rawRole).trim().toUpperCase();
+  if (upper === "CUSTOMER") return "CUSTOMER";
+  if (upper === "PROVIDER" || upper === "WORKER") return "PROVIDER";
+  return null;
+};
 
 /**
  * User Registration Controller
- *
- * Handles customer/provider onboarding and safely creates
- * provider profiles when the selected role is PROVIDER.
+ * Maps WORKER/PROVIDER -> PROVIDER and creates ProviderProfile automatically.
  */
 export const register = async (
   req: Request,
@@ -21,104 +29,37 @@ export const register = async (
   next: NextFunction
 ) => {
   try {
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      password,
-      role,
-      skill,
-    } = req.body;
+    const { firstName, lastName, email, phone, password, role, skill } =
+      req.body;
 
-    // --------------------------------------------------
-    // 1. Validate required parameters
-    // --------------------------------------------------
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      !phone ||
-      !password ||
-      !role
-    ) {
-      return sendError(
-        res,
-        "Missing required onboarding parameters.",
-        400
-      );
+    if (!firstName || !lastName || !email || !phone || !password) {
+      return sendError(res, "Missing required onboarding parameters.", 400);
     }
 
-    // --------------------------------------------------
-    // 2. Normalize input values
-    // --------------------------------------------------
     const normalizedFirstName = String(firstName).trim();
     const normalizedLastName = String(lastName).trim();
     const normalizedEmail = String(email).toLowerCase().trim();
     const normalizedPhone = String(phone).trim();
-    const normalizedRole = String(role).toUpperCase().trim();
-
-    // --------------------------------------------------
-    // 3. Validate normalized values
-    // --------------------------------------------------
-    if (
-      !normalizedFirstName ||
-      !normalizedLastName ||
-      !normalizedEmail ||
-      !normalizedPhone ||
-      !password
-    ) {
-      return sendError(
-        res,
-        "Invalid registration parameters.",
-        400
-      );
-    }
-
-    // --------------------------------------------------
-    // 4. Validate role
-    // --------------------------------------------------
-    const standardRole =
-      normalizedRole === "PROVIDER"
-        ? "PROVIDER"
-        : normalizedRole === "CUSTOMER"
-        ? "CUSTOMER"
-        : null;
+    const standardRole = normalizeRole(role);
 
     if (!standardRole) {
       return sendError(
         res,
-        "Invalid user role. Allowed roles are CUSTOMER and PROVIDER.",
+        "Invalid user role. Allowed roles are CUSTOMER, PROVIDER, and WORKER.",
         400
       );
     }
 
-    // --------------------------------------------------
-    // 5. Check duplicate email
-    // --------------------------------------------------
     const existingUserByEmail = await prisma.user.findUnique({
-      where: {
-        email: normalizedEmail,
-      },
+      where: { email: normalizedEmail },
     });
-
     if (existingUserByEmail) {
-      return sendError(
-        res,
-        "An account with this email already exists.",
-        409
-      );
+      return sendError(res, "An account with this email already exists.", 409);
     }
 
-    // --------------------------------------------------
-    // 6. Check duplicate phone
-    // --------------------------------------------------
     const existingUserByPhone = await prisma.user.findUnique({
-      where: {
-        phone: normalizedPhone,
-      },
+      where: { phone: normalizedPhone },
     });
-
     if (existingUserByPhone) {
       return sendError(
         res,
@@ -127,19 +68,8 @@ export const register = async (
       );
     }
 
-    // --------------------------------------------------
-    // 7. Hash password using bcrypt
-    // --------------------------------------------------
-    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const hashedPassword = await bcrypt.hash(
-      password,
-      saltRounds
-    );
-
-    // --------------------------------------------------
-    // 8. Create user and provider profile
-    // --------------------------------------------------
     const newUser = await prisma.user.create({
       data: {
         firstName: normalizedFirstName,
@@ -148,7 +78,6 @@ export const register = async (
         phone: normalizedPhone,
         password: hashedPassword,
         role: standardRole,
-
         providerProfile:
           standardRole === "PROVIDER"
             ? {
@@ -169,9 +98,6 @@ export const register = async (
       },
     });
 
-    // --------------------------------------------------
-    // 9. Generate JWT authorization token
-    // --------------------------------------------------
     const token = jwt.sign(
       {
         id: newUser.id,
@@ -179,14 +105,9 @@ export const register = async (
         role: newUser.role,
       },
       JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
+      { expiresIn: "1d" }
     );
 
-    // --------------------------------------------------
-    // 10. Return successful registration response
-    // --------------------------------------------------
     return res.status(201).json({
       success: true,
       message: "User registered successfully.",
@@ -196,44 +117,29 @@ export const register = async (
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         email: newUser.email,
+        phone: newUser.phone,
         role: newUser.role,
       },
     });
   } catch (error: any) {
     console.error("Registration error:", error);
 
-    // --------------------------------------------------
-    // 11. Handle Prisma unique constraint safely
-    //
-    // This protects against race conditions where another
-    // request creates the same email/phone between the
-    // duplicate check and prisma.user.create().
-    // --------------------------------------------------
     if (error?.code === "P2002") {
       const target = error?.meta?.target;
-
-      if (
-        Array.isArray(target) &&
-        target.includes("phone")
-      ) {
+      if (Array.isArray(target) && target.includes("phone")) {
         return sendError(
           res,
           "An account with this phone number already exists.",
           409
         );
       }
-
-      if (
-        Array.isArray(target) &&
-        target.includes("email")
-      ) {
+      if (Array.isArray(target) && target.includes("email")) {
         return sendError(
           res,
           "An account with this email already exists.",
           409
         );
       }
-
       return sendError(
         res,
         "An account with these unique details already exists.",
@@ -246,7 +152,7 @@ export const register = async (
 };
 
 /**
- * User Session Authentication Login Controller
+ * User Session Authentication Login Controller (supports email or phone)
  */
 export const login = async (
   req: Request,
@@ -254,59 +160,33 @@ export const login = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password } = req.body;
+    const { email, phone, password } = req.body;
 
-    // --------------------------------------------------
-    // 1. Validate login parameters
-    // --------------------------------------------------
-    if (!email || !password) {
+    if ((!email && !phone) || !password) {
       return sendError(
         res,
-        "Missing email or password context.",
+        "Missing email/phone or password context.",
         400
       );
     }
 
-    const normalizedEmail = String(email)
-      .toLowerCase()
-      .trim();
-
-    // --------------------------------------------------
-    // 2. Find user
-    // --------------------------------------------------
-    const user = await prisma.user.findUnique({
-      where: {
-        email: normalizedEmail,
-      },
-    });
+    const user = email
+      ? await prisma.user.findUnique({
+          where: { email: String(email).toLowerCase().trim() },
+        })
+      : await prisma.user.findUnique({
+          where: { phone: String(phone).trim() },
+        });
 
     if (!user) {
-      return sendError(
-        res,
-        "Invalid email or password.",
-        401
-      );
+      return sendError(res, "Invalid credentials.", 401);
     }
 
-    // --------------------------------------------------
-    // 3. Verify password
-    // --------------------------------------------------
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.password
-    );
-
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return sendError(
-        res,
-        "Invalid email or password.",
-        401
-      );
+      return sendError(res, "Invalid credentials.", 401);
     }
 
-    // --------------------------------------------------
-    // 4. Generate JWT token
-    // --------------------------------------------------
     const token = jwt.sign(
       {
         id: user.id,
@@ -314,36 +194,27 @@ export const login = async (
         role: user.role,
       },
       JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
+      { expiresIn: "1d" }
     );
 
-    // --------------------------------------------------
-    // 5. Return login response
-    // --------------------------------------------------
-    return sendSuccess(
-      res,
-      "Logged in successfully.",
-      {
-        token,
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-        },
-      }
-    );
+    return sendSuccess(res, "Logged in successfully.", {
+      token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
   } catch (error) {
     return next(error);
   }
 };
 
 /**
- * Enterprise Secure Resource Access Token
- * Verification Identity Resolver
+ * Get Authenticated User Profile
  */
 export const getMe = async (
   req: any,
@@ -351,27 +222,13 @@ export const getMe = async (
   next: NextFunction
 ) => {
   try {
-    // --------------------------------------------------
-    // 1. Get authenticated user ID
-    // --------------------------------------------------
     const userId = req.user?.id;
-
     if (!userId) {
-      return sendError(
-        res,
-        "Unauthorized session context block.",
-        401
-      );
+      return sendError(res, "Unauthorized session context block.", 401);
     }
 
-    // --------------------------------------------------
-    // 2. Find authenticated user
-    // --------------------------------------------------
     const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-
+      where: { id: userId },
       select: {
         id: true,
         firstName: true,
@@ -379,6 +236,8 @@ export const getMe = async (
         email: true,
         role: true,
         phone: true,
+        phoneVerified: true,
+        emailVerified: true,
       },
     });
 
@@ -390,15 +249,10 @@ export const getMe = async (
       );
     }
 
-    // --------------------------------------------------
-    // 3. Return session metadata
-    // --------------------------------------------------
     return sendSuccess(
       res,
       "User active session metadata resolved successfully.",
-      {
-        user,
-      }
+      { user }
     );
   } catch (error) {
     return next(error);
@@ -415,14 +269,11 @@ export const forgotPassword = async (
 ) => {
   try {
     const { email } = req.body;
-
     return res.status(200).json({
       success: true,
       message:
         "Security OTP token dispatched to your registered communication channel.",
-      data: {
-        email,
-      },
+      data: { email },
     });
   } catch (error) {
     return next(error);
@@ -430,7 +281,34 @@ export const forgotPassword = async (
 };
 
 /**
- * OTP Verification Pipeline
+ * Send 6-digit SMS OTP
+ */
+export const sendOtp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { phone } = req.body;
+    const normalizedPhone = String(phone).trim();
+    const code = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    otpStore.set(normalizedPhone, { code, expiresAt });
+    console.log(`[SMS OTP] Phone: ${normalizedPhone} | Code: ${code}`);
+
+    return sendSuccess(res, "OTP sent successfully.", {
+      phone: normalizedPhone,
+      expiresInSeconds: 300,
+      ...(process.env.NODE_ENV !== "production" ? { devOtp: code } : {}),
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Verify 6-digit OTP (Phone or Email)
  */
 export const verifyOtp = async (
   req: Request,
@@ -438,16 +316,39 @@ export const verifyOtp = async (
   next: NextFunction
 ) => {
   try {
-    const { email, otp } = req.body;
+    const { phone, email, otp } = req.body;
+    const key = phone
+      ? String(phone).trim()
+      : email
+      ? String(email).toLowerCase().trim()
+      : "";
 
-    return res.status(200).json({
-      success: true,
-      message:
-        "OTP token verified successfully. Security clearance approved.",
-      data: {
-        email,
-        verified: true,
-      },
+    const record = otpStore.get(key);
+    if (!record || Date.now() > record.expiresAt) {
+      otpStore.delete(key);
+      return sendError(res, "OTP has expired or is invalid.", 400);
+    }
+
+    if (record.code !== String(otp).trim()) {
+      return sendError(res, "Invalid OTP code.", 400);
+    }
+
+    otpStore.delete(key);
+
+    if (phone) {
+      await prisma.user.updateMany({
+        where: { phone: String(phone).trim() },
+        data: { phoneVerified: true },
+      });
+    } else if (email) {
+      await prisma.user.updateMany({
+        where: { email: String(email).toLowerCase().trim() },
+        data: { emailVerified: true },
+      });
+    }
+
+    return sendSuccess(res, "OTP verified successfully.", {
+      verified: true,
     });
   } catch (error) {
     return next(error);
